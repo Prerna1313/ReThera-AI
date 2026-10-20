@@ -185,7 +185,7 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 md:pl-60">
         {/* Top Navigation Bar */}
-        <div className="sticky top-0 z-30">
+        <div className="sticky top-0 z-30 h-16 shrink-0">
           <TopBar
             currentTab={currentTab}
             onSelectTab={handleNavigate}
