@@ -64,6 +64,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   const [briefModel, setBriefModel] = useState('');
   const [briefLimitations, setBriefLimitations] = useState('');
   const [directionFilter, setDirectionFilter] = useState<EvidenceDirection | 'all' | 'unknown'>('all');
+  const [demoProgress, setDemoProgress] = useState(0);
   const [linkedCandidateId, setLinkedCandidateId] = useState(candidates[0]?.id || '');
   const selectedCandidate = candidates.find(candidate => candidate.id === linkedCandidateId);
   const [linkedTarget, setLinkedTarget] = useState(selectedCandidate?.predicted_target || '');
@@ -79,6 +80,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   const handleTinyFishSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSearching(true);
+    setDemoProgress(0);
     setLiveError('');
     setSearchResults([]);
     setFetchedPage(null);
@@ -91,6 +93,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Search could not be completed.');
       setSearchResults(data.results || []);
+      if (data.results?.length) setDemoProgress(1);
       if (!data.results?.length) setLiveError('No approved biomedical or regulatory sources matched. Try a different search.');
       if (data.filteredCount) setLiveError(`${data.filteredCount} result(s) were hidden because their domains are outside the approved-source list.`);
     } catch (error) {
@@ -113,6 +116,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'The selected page could not be fetched.');
       setFetchedPage({ ...result, ...data });
+      setDemoProgress(2);
       setEvidenceType('E0: Unclassified source');
       setEvidenceDirection('unclear');
       setBriefFinding('');
@@ -159,6 +163,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       ],
     };
     onAddEvidence(record);
+    setDemoProgress(3);
     setSelectedRecord(record);
     setFetchedPage(null);
     setSearchResults([]);
@@ -222,6 +227,18 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
     link.download = 'rethera-evidence-brief.md';
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  };
+
+  const restartGuidedDemo = () => {
+    setTinyfishQuery('metformin Alzheimer disease clinical study');
+    setSearchResults([]);
+    setFetchedPage(null);
+    setLiveError('');
+    setBriefFinding('');
+    setBriefStudyType('');
+    setBriefModel('');
+    setBriefLimitations('');
+    setDemoProgress(0);
   };
 
   return (
@@ -317,15 +334,25 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         <div className="rounded-xl border border-[#1C3648] bg-[#071321] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-semibold text-slate-200">Explore a condition, target, compound, or trial</span>
-            <button type="button" onClick={() => setTinyfishQuery('metformin Alzheimer disease clinical study')} className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-100">Try an Alzheimer’s example</button>
+            <button type="button" onClick={restartGuidedDemo} className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 hover:text-cyan-100"><RefreshCw className="h-3 w-3" />Restart guided demo</button>
           </div>
           <p className="mt-2 text-[11px] text-slate-400">Examples: Parkinson’s disease and GLP-1 drugs · metformin and Alzheimer’s · aspirin and colorectal cancer · any question you choose.</p>
-          <ol className="mt-2 grid gap-1 text-[11px] text-slate-400 sm:grid-cols-4">
-            <li><span className="text-cyan-300">1.</span> Search literature</li>
-            <li><span className="text-cyan-300">2.</span> Fetch a source</li>
-            <li><span className="text-cyan-300">3.</span> Add a researcher brief</li>
-            <li><span className="text-cyan-300">4.</span> Save and review</li>
+          <ol className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="TinyFish guided workflow progress">
+            {[
+              { label: 'Search', detail: 'Find current sources' },
+              { label: 'Fetch', detail: 'Choose a result to inspect' },
+              { label: 'Review', detail: 'Record your assessment' },
+              { label: 'Save', detail: 'Add it to your evidence ledger' },
+            ].map((step, index) => {
+              const complete = index < demoProgress || (index === 3 && demoProgress === 3);
+              const current = index === demoProgress && demoProgress < 3;
+              return <li key={step.label} aria-current={current ? 'step' : undefined} className={`flex items-start gap-2 rounded-lg border p-2 ${complete ? 'border-teal-500/40 bg-teal-500/10' : current ? 'border-cyan-400/50 bg-cyan-500/10' : 'border-[#1C3648] bg-[#06111F]'}`}>
+                {complete ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-300" /> : <span className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border text-[9px] ${current ? 'border-cyan-300 text-cyan-200' : 'border-slate-600 text-slate-500'}`}>{index + 1}</span>}
+                <span><span className={`block text-[11px] font-semibold ${complete || current ? 'text-slate-100' : 'text-slate-400'}`}>{step.label}</span><span className="block text-[9px] text-slate-500">{step.detail}</span></span>
+              </li>;
+            })}
           </ol>
+          <p className="mt-2 text-[10px] text-slate-500" role="status">{demoProgress === 0 ? 'Start by searching. The guide advances as each step succeeds.' : demoProgress === 1 ? 'Search complete — choose one result and fetch its original page.' : demoProgress === 2 ? 'Source fetched — inspect it, add your assessment, then save it.' : 'Saved — the full review drawer is open. Finish your source review there.'}</p>
         </div>
         <form onSubmit={handleTinyFishSearch} className="flex flex-col sm:flex-row gap-2">
           <label className="sr-only" htmlFor="tinyfish-query">Biomedical source search</label>

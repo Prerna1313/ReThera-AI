@@ -291,7 +291,9 @@ export const App: React.FC = () => {
                 <KnowledgeGraphScreen
                   nodes={mockGraphNodes}
                   edges={mockGraphEdges}
+                  evidenceRecords={evidenceRecords}
                   onNavigate={handleNavigate}
+                  onOpenEvidenceReview={handleOpenEvidenceReview}
                 />
               )}
 
