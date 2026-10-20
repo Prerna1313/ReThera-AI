@@ -390,7 +390,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-[#1C3648]">
             <span className="font-bold text-sm text-slate-100 flex items-center gap-1.5">
               <Radio className="w-4 h-4 text-cyan-400" />
-              Evidence Extraction Telemetry
+              {selectedRecord.source_provider === 'TinyFish Search & Fetch' ? 'Retrieved Evidence Details' : 'Illustrative Evidence Preview'}
             </span>
             <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-[#071321] text-cyan-300 border border-cyan-500/30">
               {selectedRecord.id}
@@ -419,14 +419,14 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
               <StatusBadge type="review" value={selectedRecord.review_status} />
             </div>
 
-            {/* Extracted Claim Box */}
+            {/* Live records contain source text, not a generated or extracted claim. */}
             <div className={`p-3.5 rounded-xl border leading-relaxed text-[11px] ${
               selectedRecord.direction === 'contradicts'
                 ? 'bg-rose-500/10 border-rose-500/30 text-rose-100'
                 : 'bg-[#071321] border-[#1C3648] text-slate-200'
             }`}>
               <span className="font-bold uppercase tracking-wider text-[9px] block mb-1 opacity-75">
-                Extracted Finding:
+                {selectedRecord.source_provider === 'TinyFish Search & Fetch' ? 'Fetched source text · not AI-interpreted:' : 'Illustrative demo claim · not live evidence:'}
               </span>
               {selectedRecord.claim}
             </div>
@@ -434,8 +434,8 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
             {/* Metadata specs */}
             <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648] space-y-1.5 font-mono text-[10px] text-slate-400">
               <div className="flex justify-between">
-                <span>Extraction Confidence:</span>
-                <span className="text-cyan-300 font-bold">{selectedRecord.extraction_confidence == null ? 'Not extracted' : `${(selectedRecord.extraction_confidence * 100).toFixed(1)}%`}</span>
+                <span>{selectedRecord.source_provider === 'TinyFish Search & Fetch' ? 'Scientific extraction:' : 'Demo extraction confidence:'}</span>
+                <span className="text-cyan-300 font-bold">{selectedRecord.source_provider === 'TinyFish Search & Fetch' || selectedRecord.extraction_confidence == null ? 'Not performed' : 'Illustrative only'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Published Date:</span>
@@ -449,9 +449,9 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
 
             {/* Audit Trail */}
             <div className="space-y-1 text-[10px] font-mono text-slate-400">
-              <span className="font-bold text-slate-300 uppercase tracking-wider block">Provenance Steps:</span>
+              <span className="font-bold text-slate-300 uppercase tracking-wider block">{selectedRecord.source_provider === 'TinyFish Search & Fetch' ? 'Retrieval audit trail:' : 'Demo audit trail:'}</span>
               <div className="p-2 rounded bg-[#06111F] border border-slate-800 space-y-1">
-                {selectedRecord.audit_trail.map((st, idx) => (
+                {(selectedRecord.source_provider === 'TinyFish Search & Fetch' ? selectedRecord.audit_trail : ['Illustrative example for interface review; this record was not retrieved or analyzed by the live prototype.']).map((st, idx) => (
                   <div key={idx} className="flex items-center gap-1.5 text-slate-400">
                     <span className="w-1 h-1 rounded-full bg-cyan-400" />
                     <span>{st}</span>

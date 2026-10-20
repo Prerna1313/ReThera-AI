@@ -96,8 +96,8 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
               <div className="text-teal-300 font-medium">{evidence.retrieved_date}</div>
             </div>
             <div>
-              <div className="text-slate-400 text-[10px] uppercase">Extraction Confidence</div>
-              <div className="text-cyan-300 font-medium">{evidence.extraction_confidence == null ? 'Not extracted' : `${(evidence.extraction_confidence * 100).toFixed(1)}%`}</div>
+              <div className="text-slate-400 text-[10px] uppercase">{evidence.source_provider === 'TinyFish Search & Fetch' ? 'Scientific extraction' : 'Demo extraction confidence'}</div>
+              <div className="text-cyan-300 font-medium">{evidence.source_provider === 'TinyFish Search & Fetch' || evidence.extraction_confidence == null ? 'Not performed' : 'Illustrative only'}</div>
             </div>
           </div>
 

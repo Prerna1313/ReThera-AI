@@ -152,13 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Bottom Section */}
         <div className="p-3 border-t border-[#1C3648] space-y-2 bg-[#071321]">
-          {/* System Telemetry Indicator */}
+          {/* Prototype status */}
           <div className="p-2.5 rounded-lg bg-[#0A1B2B] border border-[#1C3648] text-[11px] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#14D9B5] animate-ping" />
-              <span className="text-slate-300 font-medium">Pipeline Engine</span>
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+              <span className="text-slate-300 font-medium">Prototype</span>
             </div>
-            <span className="font-mono text-[10px] text-teal-400">v2.4 ONLINE</span>
+            <span className="font-mono text-[10px] text-cyan-300">Demo workspace</span>
           </div>
 
           <button
