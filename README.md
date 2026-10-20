@@ -4,6 +4,22 @@ Evidence-driven intelligence for therapeutic discovery.
 
 ReThera AI is a React prototype for evidence-backed drug-repurposing research. Its screens demonstrate candidate prioritization, biomedical relationships, supporting and contradictory evidence, and research dossiers.
 
+## Brand meaning
+
+**Reimagining Therapeutics with AI** is the proposed brand meaning.
+
+- **Re — Repurpose & Reposition:** investigate existing drugs beyond their original indications.
+- **Thera — Therapeutics:** connect medicines, targets, diseases, and evidence.
+- **AI — Artificial Intelligence:** integrate evidence, connect biological relationships, prioritize hypotheses, and identify research gaps.
+
+This interpretation is proposed brand positioning; the technical proposal does not establish an official acronym expansion.
+
+**Mission:** Turn fragmented biomedical knowledge into traceable drug-repurposing hypotheses.
+
+**Vision:** Help researchers investigate promising therapeutic possibilities more efficiently, transparently, and systematically.
+
+The intended workflow brings together biomedical databases, experimental findings, publications, clinical-trial records, and newer sources retrieved through TinyFish. Researchers can inspect the evidence for and against a candidate before producing a traceable report. This describes the product direction; see the prototype limitations below for what is implemented.
+
 ## Run locally
 
 Requires Node.js and npm.

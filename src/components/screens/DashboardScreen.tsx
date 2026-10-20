@@ -42,18 +42,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <div className="space-y-4 max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-mono">
               <span className="w-2 h-2 rounded-full bg-[#14D9B5] animate-ping" />
-              Evidence-First Drug Repurposing Platform v2.4
+              Reimagining Therapeutics with AI
             </div>
 
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#E8F3F7] tracking-tight leading-tight">
-              Smarter Drug Discovery. <br />
+              Evidence-driven intelligence <br />
               <span className="bg-gradient-to-r from-[#14D9B5] via-[#31C5F4] to-[#7C73FF] bg-clip-text text-transparent">
-                Healthier Tomorrows.
+                for therapeutic discovery.
               </span>
             </h1>
 
             <p className="text-sm text-[#9BB0BF] leading-relaxed">
-              AI-powered platform for evidence-backed drug repurposing, multi-omic knowledge graph exploration, and live scientific literature monitoring through TinyFish.
+              Turn fragmented biomedical knowledge into traceable drug-repurposing hypotheses. Explore candidate relationships, review evidence for and against each hypothesis, and identify research gaps in this prototype.
             </p>
 
             {/* CTAs */}

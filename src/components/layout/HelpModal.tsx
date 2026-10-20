@@ -28,6 +28,19 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-6 text-xs leading-relaxed">
+          <section aria-labelledby="brand-meaning" className="space-y-2">
+            <h3 id="brand-meaning" className="font-bold text-sm text-teal-300">Reimagining Therapeutics with AI</h3>
+            <p className="text-slate-300">Evidence-driven intelligence for therapeutic discovery.</p>
+            <dl className="space-y-2 text-slate-300">
+              <div><dt className="font-semibold text-slate-100">Re — Repurpose &amp; Reposition</dt><dd>Explore whether existing drugs merit investigation beyond their original indications.</dd></div>
+              <div><dt className="font-semibold text-slate-100">Thera — Therapeutics</dt><dd>Connect medicines, biological targets, diseases, and biomedical evidence.</dd></div>
+              <div><dt className="font-semibold text-slate-100">AI — Artificial Intelligence</dt><dd>Integrate evidence, prioritize candidate hypotheses, and identify research gaps.</dd></div>
+            </dl>
+            <p className="text-slate-400">This is a proposed interpretation of the brand name, rather than an official acronym established by the technical proposal.</p>
+            <p className="text-slate-300"><strong>Mission:</strong> Turn fragmented biomedical knowledge into traceable drug-repurposing hypotheses.</p>
+            <p className="text-slate-300"><strong>Vision:</strong> Help researchers investigate promising therapeutic possibilities more efficiently, transparently, and systematically.</p>
+            <p className="text-slate-400">The initial product focuses on drug repurposing and evidence-backed research. TinyFish evidence retrieval is planned; this prototype uses demo records. ReThera Discover could later extend the platform into computational molecule generation and optimization. These capabilities do not establish safety or efficacy.</p>
+          </section>
           {/* Section 1: Core Product Mission */}
           <div>
             <h3 className="font-bold text-sm text-teal-300 mb-2 flex items-center gap-1.5">
@@ -38,7 +51,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               ReThera AI is an evidence-first biomedical intelligence platform designed to prioritize repurposing leads for computational biologists and translational pharmacology teams. The core workflow adheres to:
               <br />
               <span className="font-mono text-cyan-300">
-                Resolve Entity ➔ Curate Curated Evidence ➔ Construct Graph ➔ Rank Hypotheses ➔ Live Web Verification (TinyFish) ➔ Challenge Conflicts ➔ Export Audit Dossier.
+                Resolve Entity ➔ Retrieve Evidence ➔ Construct Graph ➔ Rank Hypotheses ➔ Retrieve New Sources (TinyFish, planned) ➔ Review Contradictions ➔ Export Dossier (planned).
               </span>
             </p>
           </div>
