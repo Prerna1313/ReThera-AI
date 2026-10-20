@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Candidate, NavigationTab } from '../../types';
+import { Candidate, EvidenceRecord, NavigationTab } from '../../types';
 import { EvidenceBreakdownChart } from '../scientific/EvidenceBreakdownChart';
 import { StatusBadge } from '../scientific/StatusBadge';
 import { FactorScoreBar } from '../scientific/FactorScoreBar';
@@ -20,22 +20,46 @@ import {
 
 interface ResearchDossierScreenProps {
   candidates: Candidate[];
+  evidenceRecords: EvidenceRecord[];
   onNavigate: (tab: NavigationTab, candidateId?: string) => void;
 }
 
 export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
   candidates,
+  evidenceRecords,
   onNavigate,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
 
   const handleExport = (format: 'pdf' | 'csv') => {
-    setDownloading(format);
-    setTimeout(() => {
-      setDownloading(null);
-      alert(`ReThera AI Research Dossier (BRCA-001) successfully exported as ${format.toUpperCase()}`);
-    }, 1200);
+    if (format === 'pdf') {
+      window.print();
+      return;
+    }
+
+    const cell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = [
+      ['record_type', 'name_or_title', 'identifier_or_url', 'score_or_direction', 'evidence_type', 'review_status', 'fetched_source_text', 'limitations_and_review_notes'],
+      ...candidates.map(candidate => [
+        'Illustrative candidate', candidate.name, `${candidate.chembl_id}; ${candidate.pubchem_cid}`,
+        candidate.priority_score, 'Static sample score', 'Not scientifically validated', '', candidate.rationale,
+      ]),
+      ...evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').map(record => [
+        'TinyFish source record', record.title, record.url, record.direction, record.category,
+        record.review_status, record.claim, `Retrieved ${record.retrieved_date}. ${record.limitations} ${record.reviewer_notes || ''}`,
+      ]),
+    ];
+    const csv = rows.map(row => row.map(cell).join(',')).join('\r\n');
+    const file = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const fileUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = `rethera-brca-001-dossier-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1_000);
+    setDownloading('csv');
+    window.setTimeout(() => setDownloading(null), 1500);
   };
 
   const handleShare = () => {
@@ -48,6 +72,9 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
     <div className="space-y-6 pb-16 max-w-5xl mx-auto">
       {/* Top Dossier Header Card */}
       <div className="p-6 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-elevated-dark space-y-4">
+        <div role="note" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+          Example dossier generated from static prototype records. Candidate scores, example evidence claims, and citations have not been verified. Live TinyFish source records appear below and do not change this sample ranking.
+        </div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5 font-mono text-[10px]">
@@ -55,10 +82,10 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
                 DOSSIER ID: BRCA-001
               </span>
               <span className="text-slate-400">
-                Created: Apr 12, 2026 • Updated: Oct 20, 2026
+                Prototype preview · static candidate data
               </span>
               <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                FINALIZED
+                SAMPLE
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white">
@@ -76,7 +103,7 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#14D9B5] to-[#31C5F4] text-[#06111F] text-xs font-bold shadow-teal-glow hover:opacity-95 transition-all disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              {downloading === 'pdf' ? 'Generating PDF...' : 'Export PDF'}
+            Print / Save PDF
             </button>
 
             <button
@@ -101,10 +128,10 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
         {/* Snapshot & Model Specs Bar */}
         <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648] flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-slate-400">
           <div>
-            Data Snapshot: <span className="text-slate-200">ChEMBL v33, Open Targets 24.09, TinyFish Live Web</span>
+            Data Snapshot: <span className="text-slate-200">Illustrative local prototype records</span>
           </div>
           <div>
-            Ranking Model: <span className="text-teal-400">ReThera Heuristic Ranker v2.4</span>
+            Ranking Model: <span className="text-teal-400">Static illustrative scores · not evaluated</span>
           </div>
         </div>
       </div>
@@ -118,23 +145,23 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
           </span>
           <div className="space-y-2.5 text-xs">
             <div className="p-3 rounded-xl bg-[#071321] border border-teal-500/30">
-              <div className="font-bold text-teal-300 mb-0.5">Top Candidate: Tamoxifen (0.92)</div>
+              <div className="font-bold text-teal-300 mb-0.5">Sample score: Tamoxifen (0.92)</div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Strong historical rationale via validated ESR1 antagonism; 47% 5-year DFS improvement in ER+ cohorts.
+                Example record only. This score is static demo data, not a validated result or clinical estimate.
               </p>
             </div>
 
             <div className="p-3 rounded-xl bg-[#071321] border border-cyan-500/30">
-              <div className="font-bold text-cyan-300 mb-0.5">High Potential Repurposing Lead: Metformin (0.87)</div>
+              <div className="font-bold text-cyan-300 mb-0.5">Sample candidate: Metformin (0.87)</div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Indirect mTOR pathway downregulation through AMPK activation; in-vivo pre-clinical synergy observed.
+                Example record only. This is not an evidence-validated repurposing lead.
               </p>
             </div>
 
             <div className="p-3 rounded-xl bg-[#071321] border border-rose-500/30">
-              <div className="font-bold text-rose-300 mb-0.5">Critical Caveat Detected via TinyFish</div>
+              <div className="font-bold text-rose-300 mb-0.5">Example contradiction record · not live-verified</div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                ESR1 Y537S resistance mutation detected in 28.4% of endocrine-resistant cohorts; 18-fold relative binding decrease.
+                Static fixture for demonstrating how contradictory evidence could be presented.
               </p>
             </div>
           </div>
@@ -155,7 +182,7 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
             Executive Summary
           </h2>
           <p>
-            This dossier reports a computational drug repurposing investigation targeting Estrogen Receptor Alpha (ESR1) and associated cell-cycle pathways in Breast Neoplasms (MONDO:0004980). A total of 249 approved chemical entities were screened against curated ChEMBL bioactivities, Open Targets functional genetics, and live literature fetched via TinyFish. Tamoxifen ranks highest (#1, score 0.92) as a gold-standard benchmark, followed by Metformin (#2, score 0.87) and Rapamycin (#3, score 0.83).
+            This screen illustrates a possible dossier layout for a breast-cancer research question. It displays {candidates.length} static sample candidate records; no compounds were screened by this application, and no live database or TinyFish result produced these ranks.
           </p>
         </div>
 
@@ -267,11 +294,27 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
         <div className="p-6 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-sm space-y-2">
           <h2 className="font-bold text-sm text-teal-300 uppercase tracking-wider flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center font-mono text-[10px]">7</span>
-            Live-Web Updates via TinyFish Search & Fetch
+            Live-Web Updates · Demo Workflow
           </h2>
           <p>
-            Continuous background polling configured via TinyFish Search API. Last update synchronized at 2026-10-20 11:24:08 UTC across ClinicalTrials.gov and PubMed. New publications and regulatory label updates automatically append to the provenance ledger.
+            TinyFish retrieval is on demand in Evidence Monitor. Choose a search result, fetch its page, inspect the returned text, and save it for source review. Retrieved evidence does not automatically alter the scores or content in this static example dossier.
           </p>
+          <div className="space-y-3 pt-2">
+            <h3 className="font-semibold text-slate-200">Saved TinyFish source records ({evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').length})</h3>
+            {evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').length === 0 ? (
+              <p className="text-slate-400">No live source has been saved yet. Run a Search and Fetch in Evidence Monitor to add one here.</p>
+            ) : evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').map(record => (
+              <article key={record.id} className="rounded-lg border border-[#1C3648] bg-[#071321] p-3 space-y-2">
+                <a className="font-semibold text-cyan-300 hover:underline" href={record.url} target="_blank" rel="noreferrer">{record.title} ↗</a>
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge type="category" value={record.category} />
+                  <StatusBadge type="direction" value={record.direction} />
+                  <StatusBadge type="review" value={record.review_status} />
+                </div>
+                <p className="text-[10px] text-slate-400">Retrieved {record.retrieved_date}. Verify the original source before using its contents.</p>
+              </article>
+            ))}
+          </div>
         </div>
 
         {/* Section 8: Methodology & Data Sources */}

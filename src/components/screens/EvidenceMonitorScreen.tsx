@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { EvidenceRecord, NavigationTab } from '../../types';
+import React, { useEffect, useState } from 'react';
+import { EvidenceCategory, EvidenceDirection, EvidenceRecord, NavigationTab } from '../../types';
 import { StatusBadge } from '../scientific/StatusBadge';
 import {
   Search,
@@ -15,35 +15,143 @@ import {
   Clock,
   Sparkles,
   History,
+  Link2,
 } from 'lucide-react';
+
+interface TinyFishSearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  publishedDate: string | null;
+}
+
+interface TinyFishFetchedPage extends TinyFishSearchResult {
+  content: string;
+  retrievedAt: string;
+}
 
 interface EvidenceMonitorScreenProps {
   evidenceList: EvidenceRecord[];
   onOpenEvidenceDrawer: (evidenceId: string) => void;
+  onAddEvidence: (record: EvidenceRecord) => void;
   onNavigate: (tab: NavigationTab) => void;
 }
 
 export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   evidenceList,
   onOpenEvidenceDrawer,
+  onAddEvidence,
   onNavigate,
 }) => {
   const [activeTab, setActiveTab] = useState<'recent' | 'monitored' | 'library'>('recent');
   const [selectedRecord, setSelectedRecord] = useState<EvidenceRecord>(evidenceList[0]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [tinyfishQuery, setTinyfishQuery] = useState('Tamoxifen ESR1 resistance breast cancer clinical study');
+  const [tinyfishConfigured, setTinyfishConfigured] = useState<boolean | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [fetchingUrl, setFetchingUrl] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<TinyFishSearchResult[]>([]);
+  const [fetchedPage, setFetchedPage] = useState<TinyFishFetchedPage | null>(null);
+  const [liveError, setLiveError] = useState('');
+  const [evidenceType, setEvidenceType] = useState<EvidenceCategory>('E0: Unclassified source');
+  const [evidenceDirection, setEvidenceDirection] = useState<EvidenceDirection>('unclear');
 
-  const handleRefreshTinyFish = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1500);
+  useEffect(() => {
+    fetch('/api/health')
+      .then(response => response.json())
+      .then(data => setTinyfishConfigured(Boolean(data.tinyfishConfigured)))
+      .catch(() => setTinyfishConfigured(false));
+  }, []);
+
+  const handleTinyFishSearch = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSearching(true);
+    setLiveError('');
+    setSearchResults([]);
+    setFetchedPage(null);
+    try {
+      const response = await fetch('/api/tinyfish/search', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: tinyfishQuery }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Search could not be completed.');
+      setSearchResults(data.results || []);
+      if (!data.results?.length) setLiveError('No approved biomedical or regulatory sources matched. Try a different search.');
+      if (data.filteredCount) setLiveError(`${data.filteredCount} result(s) were hidden because their domains are outside the approved-source list.`);
+    } catch (error) {
+      setLiveError(error instanceof Error ? error.message : 'Search could not be completed.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const filteredEvidence = evidenceList.filter(ev =>
+  const handleTinyFishFetch = async (result: TinyFishSearchResult) => {
+    setFetchingUrl(result.url);
+    setLiveError('');
+    setFetchedPage(null);
+    try {
+      const response = await fetch('/api/tinyfish/fetch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: result.url, title: result.title }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'The selected page could not be fetched.');
+      setFetchedPage({ ...result, ...data });
+      setEvidenceType('E0: Unclassified source');
+      setEvidenceDirection('unclear');
+    } catch (error) {
+      setLiveError(error instanceof Error ? error.message : 'The selected page could not be fetched.');
+    } finally {
+      setFetchingUrl(null);
+    }
+  };
+
+  const handleSaveFetchedEvidence = () => {
+    if (!fetchedPage) return;
+    const record: EvidenceRecord = {
+      id: `live-tinyfish-${crypto.randomUUID()}`,
+      title: fetchedPage.title,
+      url: fetchedPage.url,
+      source_provider: 'TinyFish Search & Fetch',
+      published_date: fetchedPage.publishedDate || 'Not provided — check source',
+      retrieved_date: fetchedPage.retrievedAt,
+      linked_compounds: [],
+      linked_targets: [],
+      linked_diseases: [],
+      claim: fetchedPage.content,
+      category: evidenceType,
+      direction: evidenceDirection,
+      review_status: 'Needs Review',
+      limitations: 'Page text was retrieved with TinyFish and has not been interpreted or verified by ReThera. Check the original source, study context, dates, and relevance before using it as evidence.',
+      audit_trail: [
+        `TinyFish Search query: ${tinyfishQuery.trim()}`,
+        `Selected source: ${fetchedPage.url}`,
+        `TinyFish Fetch completed: ${fetchedPage.retrievedAt}`,
+        'Classification entered by the researcher; source confirmation is still required.',
+      ],
+    };
+    onAddEvidence(record);
+    setSelectedRecord(record);
+    setFetchedPage(null);
+    setSearchResults([]);
+    setLiveError('');
+  };
+
+  const matchingEvidence = evidenceList.filter(ev =>
     ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ev.claim.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ev.source_provider.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const liveEvidenceCount = evidenceList.filter(record => record.source_provider === 'TinyFish Search & Fetch').length;
+  const filteredEvidence = matchingEvidence.filter(record =>
+    activeTab === 'monitored'
+      ? record.source_provider === 'TinyFish Search & Fetch'
+      : activeTab === 'library'
+        ? record.source_provider !== 'TinyFish Search & Fetch'
+        : true
   );
 
   return (
@@ -54,10 +162,10 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-mono text-[10px] border border-cyan-500/30 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              TINYFISH LIVE SEARCH & FETCH
+              TINYFISH SEARCH & FETCH
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              Quota: 1,000 URLs/day (642 remaining) • 99.8% Sync Integrity
+              {tinyfishConfigured === null ? 'Checking server configuration…' : tinyfishConfigured ? 'Server key configured · source review required' : 'Add server key to enable live retrieval'}
             </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100">
@@ -69,14 +177,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleRefreshTinyFish}
-            disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#14D9B5] to-[#31C5F4] text-[#06111F] text-xs font-bold shadow-teal-glow hover:opacity-95 transition-all disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Running Fetch...' : 'Run Live Search & Fetch'}
-          </button>
+          <span className="text-[11px] text-slate-400">One explicit Search → select → Fetch sequence</span>
         </div>
       </div>
 
@@ -85,9 +186,9 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
             {[
-              { id: 'recent', label: `Recent Findings (${evidenceList.length})` },
-              { id: 'monitored', label: 'Monitored Candidates (8)' },
-              { id: 'library', label: 'Source Library (120)' },
+              { id: 'recent', label: `All Evidence (${evidenceList.length})` },
+              { id: 'monitored', label: `Live TinyFish (${liveEvidenceCount})` },
+              { id: 'library', label: `Example Records (${evidenceList.length - liveEvidenceCount})` },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -104,22 +205,96 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
           </div>
 
           <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-            <span>Last sync: 2 hours ago via TinyFish Agent v1.2</span>
+            <span>{liveEvidenceCount} TinyFish source record{liveEvidenceCount === 1 ? '' : 's'} saved in this browser</span>
           </div>
         </div>
 
-        {/* Live Search Input Bar */}
+        {/* Local filter for already visible evidence records */}
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search new publications, NCT trials, FDA updates, or candidate drugs (e.g. Tamoxifen resistance)..."
+            placeholder="Filter visible evidence records..."
             className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-[#071321] border border-[#1C3648] text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
           />
         </div>
       </div>
+
+      <section className="rounded-2xl bg-[#0A1B2B] border border-cyan-500/30 p-5 space-y-4" aria-labelledby="tinyfish-search-title">
+        <div>
+          <h2 id="tinyfish-search-title" className="font-semibold text-slate-100">Find a current source with TinyFish</h2>
+          <p className="mt-1 text-xs text-slate-400">Search approved biomedical and regulatory sources, choose one result, then fetch and review its original page. Retrieved text is not an AI-verified claim.</p>
+        </div>
+        <form onSubmit={handleTinyFishSearch} className="flex flex-col sm:flex-row gap-2">
+          <label className="sr-only" htmlFor="tinyfish-query">Biomedical source search</label>
+          <input
+            id="tinyfish-query"
+            required
+            minLength={3}
+            maxLength={280}
+            value={tinyfishQuery}
+            onChange={event => setTinyfishQuery(event.target.value)}
+            placeholder="Drug, target, disease, or trial question"
+            className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#071321] border border-[#1C3648] text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+          />
+          <button type="submit" disabled={isSearching || tinyfishQuery.trim().length < 3} className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-cyan-400 text-[#06111F] text-sm font-semibold disabled:opacity-50">
+            <Search className={`w-4 h-4 ${isSearching ? 'animate-pulse' : ''}`} />
+            {isSearching ? 'Searching…' : 'Search TinyFish'}
+          </button>
+        </form>
+
+        {liveError && <div role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">{liveError}</div>}
+
+        {searchResults.length > 0 && (
+          <div className="space-y-2" aria-live="polite">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-300">{searchResults.length} approved source{searchResults.length === 1 ? '' : 's'} found · choose one to fetch</h3>
+            {searchResults.map(result => (
+              <article key={result.url} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[#1C3648] bg-[#071321] p-3">
+                <div className="min-w-0">
+                  <h4 className="text-sm font-semibold text-slate-100">{result.title}</h4>
+                  <a className="mt-1 block truncate text-xs text-cyan-300 hover:underline" href={result.url} target="_blank" rel="noreferrer">{result.url}</a>
+                  {result.snippet && <p className="mt-1 line-clamp-2 text-xs text-slate-400">{result.snippet}</p>}
+                </div>
+                <button type="button" onClick={() => handleTinyFishFetch(result)} disabled={fetchingUrl !== null} className="shrink-0 rounded-lg border border-cyan-500/40 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/10 disabled:opacity-50">
+                  {fetchingUrl === result.url ? 'Fetching…' : 'Fetch this source'}
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {fetchedPage && (
+          <div className="space-y-3 rounded-xl border border-teal-500/30 bg-[#071321] p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-teal-200"><Link2 className="h-4 w-4" />Source fetched · researcher review required</div>
+            <a className="block text-xs text-cyan-300 hover:underline" href={fetchedPage.url} target="_blank" rel="noreferrer">{fetchedPage.title} ↗</a>
+            <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[#1C3648] bg-[#06111F] p-3 text-xs leading-relaxed text-slate-300">{fetchedPage.content}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="space-y-1 text-xs text-slate-300">Evidence type
+                <select value={evidenceType} onChange={event => setEvidenceType(event.target.value as EvidenceCategory)} className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100">
+                  <option value="E0: Unclassified source">Unclassified — review later</option>
+                  <option value="E1: Human / Regulatory">Human / Regulatory</option>
+                  <option value="E2: In Vivo">In Vivo</option>
+                  <option value="E3: In Vitro / Assay">In Vitro / Assay</option>
+                  <option value="E4: Computational">Computational</option>
+                  <option value="E5: Inferred / Hypothesis">Inferred / Hypothesis</option>
+                </select>
+              </label>
+              <label className="space-y-1 text-xs text-slate-300">Your initial assessment
+                <select value={evidenceDirection} onChange={event => setEvidenceDirection(event.target.value as EvidenceDirection)} className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100">
+                  <option value="unclear">Unclear / not assessed</option>
+                  <option value="supports">Appears to support</option>
+                  <option value="contradicts">Appears to contradict</option>
+                  <option value="contextual">Contextual information</option>
+                </select>
+              </label>
+            </div>
+            <p className="text-[11px] text-amber-200">Your initial assessment is saved as unreviewed. Confirm the source in the evidence drawer before treating it as verified.</p>
+            <button type="button" onClick={handleSaveFetchedEvidence} className="rounded-lg bg-teal-400 px-4 py-2 text-sm font-semibold text-[#06111F]">Save to evidence ledger</button>
+          </div>
+        )}
+      </section>
 
       {/* Main 12-Col Split Grid: Feed (8 cols) / Selected Evidence Side Inspector (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -138,6 +313,9 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1C3648]/50">
+                  {filteredEvidence.length === 0 && (
+                    <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400">No matching records in this view yet. Run a TinyFish Search above to add a live source.</td></tr>
+                  )}
                   {filteredEvidence.map(ev => {
                     const isSelected = selectedRecord?.id === ev.id;
                     return (
@@ -155,6 +333,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                             {ev.published_date} • {ev.retrieved_date.split(' ')[0]}
                           </div>
+                          {ev.source_provider !== 'TinyFish Search & Fetch' && <div className="mt-1 text-[10px] text-amber-300">Illustrative sample · not a live result</div>}
                         </td>
 
                         <td className="py-3 px-3 text-[11px] text-slate-300 font-mono">
@@ -237,7 +416,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
             <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648] space-y-1.5 font-mono text-[10px] text-slate-400">
               <div className="flex justify-between">
                 <span>Extraction Confidence:</span>
-                <span className="text-cyan-300 font-bold">{(selectedRecord.extraction_confidence * 100).toFixed(1)}%</span>
+                <span className="text-cyan-300 font-bold">{selectedRecord.extraction_confidence == null ? 'Not extracted' : `${(selectedRecord.extraction_confidence * 100).toFixed(1)}%`}</span>
               </div>
               <div className="flex justify-between">
                 <span>Published Date:</span>

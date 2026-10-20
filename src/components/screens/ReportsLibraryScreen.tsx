@@ -77,7 +77,7 @@ export const ReportsLibraryScreen: React.FC<ReportsLibraryScreenProps> = ({
             Comparing BRCA-001 (Snapshot 2026-10-20) vs BRCA-001 (Snapshot 2026-04-12)
           </div>
           <p className="text-slate-300 text-[11px]">
-            New evidence added: <strong>14 live web citations</strong> retrieved via TinyFish, including Nature Medicine 2026 ESR1 Y537S resistance mutation. Priority ranking for Metformin shifted from #4 to #2 (+0.08 score delta).
+            Illustrative report preview. This record does not represent a live TinyFish retrieval or an evidence-driven candidate rank change.
           </p>
         </div>
       )}

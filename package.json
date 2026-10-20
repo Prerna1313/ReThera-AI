@@ -4,9 +4,13 @@
   "private": true,
   "description": "ReThera AI — Complete Product UI/UX Design System and Application",
   "type": "module",
+  "engines": {
+    "node": ">=20.6"
+  },
   "scripts": {
-    "dev": "vite",
+    "dev": "node --env-file-if-exists=.env server/index.mjs",
     "build": "vite build",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

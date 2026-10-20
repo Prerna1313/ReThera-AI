@@ -10,6 +10,7 @@ export type NavigationTab =
   | 'settings';
 
 export type EvidenceCategory = 
+  | 'E0: Unclassified source'
   | 'E1: Human / Regulatory'
   | 'E2: In Vivo'
   | 'E3: In Vitro / Assay'
@@ -121,7 +122,7 @@ export interface EvidenceRecord {
   category: EvidenceCategory;
   direction: EvidenceDirection;
   review_status: ReviewStatus;
-  extraction_confidence: number;
+  extraction_confidence?: number;
   limitations: string;
   reviewer_notes?: string;
   audit_trail: string[];

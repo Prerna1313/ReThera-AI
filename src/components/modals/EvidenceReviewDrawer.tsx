@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EvidenceRecord } from '../../types';
 import { StatusBadge } from '../scientific/StatusBadge';
 import { X, ExternalLink, CheckCircle2, AlertTriangle, AlertCircle, Clock, ShieldCheck, History } from 'lucide-react';
@@ -7,7 +7,7 @@ interface EvidenceReviewDrawerProps {
   evidence: EvidenceRecord | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateStatus?: (evidenceId: string, status: string, notes: string) => void;
+  onUpdateStatus?: (evidenceId: string, status: EvidenceRecord['review_status'], notes: string) => void;
 }
 
 export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
@@ -20,9 +20,15 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
   const [currentStatus, setCurrentStatus] = useState(evidence?.review_status || 'Needs Review');
   const [isSaved, setIsSaved] = useState(false);
 
+  useEffect(() => {
+    setNote(evidence?.reviewer_notes || '');
+    setCurrentStatus(evidence?.review_status || 'Needs Review');
+    setIsSaved(false);
+  }, [evidence?.id, evidence?.reviewer_notes, evidence?.review_status]);
+
   if (!isOpen || !evidence) return null;
 
-  const handleAction = (newStatus: any) => {
+  const handleAction = (newStatus: EvidenceRecord['review_status']) => {
     setCurrentStatus(newStatus);
     setIsSaved(true);
     if (onUpdateStatus) {
@@ -91,14 +97,14 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
             </div>
             <div>
               <div className="text-slate-400 text-[10px] uppercase">Extraction Confidence</div>
-              <div className="text-cyan-300 font-medium">{(evidence.extraction_confidence * 100).toFixed(1)}%</div>
+              <div className="text-cyan-300 font-medium">{evidence.extraction_confidence == null ? 'Not extracted' : `${(evidence.extraction_confidence * 100).toFixed(1)}%`}</div>
             </div>
           </div>
 
           {/* Extracted Claim Text */}
           <div className="space-y-1.5">
             <label className="font-semibold text-slate-300 text-[11px] uppercase tracking-wider">
-              Normalized Scientific Claim
+              {evidence.source_provider === 'TinyFish Search & Fetch' ? 'Fetched source text · not AI-interpreted' : 'Illustrative demo claim'}
             </label>
             <div className={`p-4 rounded-xl border leading-relaxed text-slate-100 text-xs ${
               evidence.direction === 'contradicts'
@@ -108,6 +114,12 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
               {evidence.claim}
             </div>
           </div>
+
+          {evidence.source_provider === 'TinyFish Search & Fetch' && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-200">
+              TinyFish retrieved the page text. ReThera has not independently verified the source or interpreted its scientific meaning. Review the original page before confirming this record.
+            </div>
+          )}
 
           {/* Linked Ontology Entities */}
           <div className="space-y-1.5">

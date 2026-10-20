@@ -31,10 +31,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const primaryNavItems: Array<{ id: NavigationTab; label: string; icon: React.ReactNode; badge?: string }> = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'repurposing', label: 'Repurposing', icon: <GitBranch className="w-4 h-4" />, badge: '249' },
+    { id: 'repurposing', label: 'Repurposing', icon: <GitBranch className="w-4 h-4" /> },
     { id: 'knowledge-graph', label: 'Knowledge Graph', icon: <Network className="w-4 h-4" /> },
     { id: 'compounds', label: 'Compounds', icon: <Boxes className="w-4 h-4" /> },
-    { id: 'evidence-monitor', label: 'Evidence Monitor', icon: <Radio className="w-4 h-4" />, badge: 'Live' },
+    { id: 'evidence-monitor', label: 'Evidence Monitor', icon: <Radio className="w-4 h-4" />, badge: 'Demo' },
     { id: 'reports', label: 'Reports', icon: <FileSpreadsheet className="w-4 h-4" /> },
   ];
 

@@ -2,7 +2,7 @@
 
 Evidence-driven intelligence for therapeutic discovery.
 
-ReThera AI is a React prototype for evidence-backed drug-repurposing research. Its screens demonstrate candidate prioritization, biomedical relationships, supporting and contradictory evidence, and research dossiers.
+ReThera AI is a prototype for evidence-backed drug-repurposing research. It combines a sample candidate-ranking interface with a live, researcher-reviewed TinyFish Search and Fetch workflow.
 
 **Reimagining Therapeutics with AI** is the proposed brand meaning.
 
@@ -18,12 +18,18 @@ The intended workflow brings together biomedical databases, experimental finding
 
 ## Run locally
 
-Requires Node.js and npm.
+Requires Node.js 20.6+ and npm. To enable TinyFish, copy `.env.example` to `.env` and add your own API key. The key is read by the local Node server and is never sent to the browser.
 
 ```sh
 npm ci
+Copy-Item .env.example .env
+# Edit .env and replace the example value with your TinyFish API key.
 npm run dev
 ```
+
+Open `http://localhost:3000`, select **Evidence Monitor**, enter a focused biomedical query, and choose **Search TinyFish**. Choose a result from an approved biomedical or regulatory source, fetch its page, inspect the returned text, and save it to the evidence ledger. The new record is persisted in that browser's local storage and starts as unreviewed. Open the audit drawer to add a review note and confirm or flag the source. If no key is configured, the screen explains how to set one up. The API key never appears in frontend code or search/fetch responses.
+
+The prototype uses TinyFish Search and Fetch directly; it does not use Agent or Browser. TinyFish currently lists Search and Fetch as free within provider limits. Check [TinyFish pricing](https://www.tinyfish.ai/pricing) for current quotas and terms.
 
 ## Validate and build
 
@@ -32,13 +38,13 @@ npx tsc --noEmit
 npm run build
 ```
 
-`npm run preview` serves the production build locally.
+`npm run build` creates the frontend bundle. `npm start` serves the built app and TinyFish API from the same Node process; set `TINYFISH_API_KEY` as a private environment variable on the host. `npm run preview` serves only the static frontend bundle and does not provide the TinyFish API.
 
 ## Prototype scope
 
-The application uses illustrative mock data. Scores, citations, molecular illustrations, and evidence updates have not been scientifically validated. TinyFish and scientific models are not connected. Evidence refresh simulates a delay, and dossier export currently displays a notification rather than generating a file.
+The candidate rankings, scientific examples, citations, graph records, and dossier are illustrative fixtures, not validated findings. TinyFish is used only for explicit Search and researcher-selected Fetch requests in Evidence Monitor. Retrieved text is stored without automated scientific interpretation, and remains pending researcher review. The live evidence ledger is stored in browser local storage. It does not alter the sample candidate ranking or the static example dossier. No scientific models are connected; molecule-generation and ADMET predictions are not performed.
 
-The workbench demonstrates one breast cancer investigation. Target and clinical-status filters operate on the supplied demo candidates. Other disease investigations, real source retrieval, persistent investigations, and downloadable dossiers require further implementation.
+The workbench demonstrates one breast cancer investigation. Target and clinical-status filters operate on the supplied sample candidates. TinyFish search results are limited to HTTPS sources on the server's approved domain list: PubMed, Europe PMC, ClinicalTrials.gov, FDA, PubChem, and Open Targets. Empty results, unavailable credentials, and provider errors are surfaced in the interface. No LLM extraction or automatic support/contradiction assignment is performed.
 
 ReThera Discover is a future concept for computational molecule generation and optimization. The prototype does not establish safety, efficacy, or clinical benefit.
 
@@ -48,5 +54,6 @@ ReThera Discover is a future concept for computational molecule generation and o
 - `src/components/scientific`: scientific visualizations
 - `src/components/layout`: navigation and help
 - `src/data/mockData.ts`: illustrative records
+- `server/index.mjs`: same-origin server, TinyFish proxy, source policy, and production static-file serving
 - `src/types`: application data types
 - `figma-plugin`: design export plugin

@@ -275,18 +275,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </div>
           </div>
 
-          {/* TinyFish Live Evidence Updates Stream */}
+          {/* Evidence Workflow Preview */}
           <div className="p-5 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-[#1C3648] mb-3">
               <div className="flex items-center gap-2">
-                <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
-                <span className="font-bold text-sm text-slate-100">Live Evidence Activity Feed (TinyFish)</span>
+                <Radio className="w-4 h-4 text-cyan-400" />
+                <span className="font-bold text-sm text-slate-100">Evidence Review Workflow · Preview</span>
               </div>
               <button
                 onClick={() => onNavigate('evidence-monitor')}
                 className="text-xs text-cyan-400 hover:text-cyan-300 font-medium"
               >
-                Open Evidence Monitor →
+                Open TinyFish Evidence Monitor →
               </button>
             </div>
 
@@ -294,35 +294,35 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648] flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 text-[10px] font-mono border border-rose-500/30">
-                      Contradiction Alert
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-mono border border-amber-500/30">
+                      Illustrative example
                     </span>
                     <span className="text-slate-100 font-medium text-xs">
-                      Nature Medicine: ESR1 Y537S resistance mutation detected in metastatic ER+ cohort
+                      Support and contradictory evidence can be reviewed side by side
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Circulating tumor DNA in 412 patients shows 18-fold reduction in Tamoxifen relative binding efficacy.
+                    Sample records in this prototype are not live-verified research findings.
                   </p>
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">2h ago</span>
+                <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">Static preview</span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648] flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-mono border border-emerald-500/30">
-                      Trial Update
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-mono border border-amber-500/30">
+                      Prototype capability
                     </span>
                     <span className="text-slate-100 font-medium text-xs">
-                      Lancet Oncology: ATLAS 10-year Tamoxifen follow-up trial confirms continuing benefit
+                      Add a selected live source to the evidence ledger
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Continuing treatment for 10 years versus 5 years produced additional 50% relative recurrence reduction.
+                    TinyFish Search and Fetch runs on demand in the Evidence Monitor when configured.
                   </p>
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">Yesterday</span>
+                <span className="text-[10px] text-slate-400 font-mono whitespace-nowrap">No background polling</span>
               </div>
             </div>
           </div>
@@ -333,27 +333,27 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           {/* Key Stats Panel (Matching Image 2) */}
           <div className="p-5 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-sm space-y-4">
             <span className="text-xs font-semibold text-[#9BB0BF] uppercase tracking-wider block">
-              Key Platform Stats
+              Prototype Inventory
             </span>
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-xl font-bold font-mono text-[#14D9B5]">2.4M</div>
-                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Molecules Evaluated</div>
+                <div className="text-xl font-bold font-mono text-[#14D9B5]">{investigations.length}</div>
+                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Sample investigations</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-xl font-bold font-mono text-[#31C5F4]">15</div>
-                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Biomedical Datasets</div>
+                <div className="text-xl font-bold font-mono text-[#31C5F4]">{dataSources.length}</div>
+                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Sample source labels</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-xl font-bold font-mono text-[#7C73FF]">8</div>
-                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Targets Analyzed</div>
+                <div className="text-xl font-bold font-mono text-[#7C73FF]">1</div>
+                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Workbench scenario</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-xl font-bold font-mono text-emerald-400">94.2%</div>
-                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Valid Compounds</div>
+                <div className="text-xl font-bold font-mono text-emerald-400">Manual</div>
+                <div className="text-[11px] text-[#9BB0BF] mt-0.5">Evidence review</div>
               </div>
             </div>
           </div>
@@ -368,7 +368,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 onClick={() => onNavigate('settings')}
                 className="text-[10px] text-teal-400 hover:underline"
               >
-                Inspect Licences
+                Inspect Sources
               </button>
             </div>
 
@@ -376,16 +376,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               {dataSources.slice(0, 5).map(ds => (
                 <div key={ds.name} className="flex items-center justify-between p-2 rounded-lg bg-[#071321] border border-[#1C3648]/60">
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
                     <span className="font-medium text-slate-200 text-[11px]">{ds.name}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400">{ds.records_count.split(',')[0]}</span>
+                  <span className="text-[10px] font-mono text-slate-400">Sample</span>
                 </div>
               ))}
             </div>
 
             <div className="pt-2 text-[10px] text-[#8293A5] italic leading-tight">
-              *Live connections simulated in Demo Workspace. All facts backed by cited public datasets.
+              Sample records only. Source adapters are not connected on this dashboard.
             </div>
           </div>
         </div>

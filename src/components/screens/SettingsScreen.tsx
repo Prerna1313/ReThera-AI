@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DataSource } from '../../types';
 import {
   Settings,
@@ -30,6 +30,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onToggleTheme,
 }) => {
   const [activeTab, setActiveTab] = useState<'sources' | 'appearance' | 'models' | 'security'>('sources');
+  const [tinyFishConfigured, setTinyFishConfigured] = useState<boolean | null>(null);
   const [weights, setWeights] = useState({
     bio: 25,
     pharm: 25,
@@ -38,6 +39,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     live: 10,
     coverage: 15,
   });
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then(response => response.json())
+      .then(data => setTinyFishConfigured(Boolean(data.tinyfishConfigured)))
+      .catch(() => setTinyFishConfigured(false));
+  }, []);
 
   return (
     <div className="space-y-6 pb-16 max-w-5xl mx-auto">
@@ -55,7 +63,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           Settings & Data Operations
         </h1>
         <p className="text-xs text-[#9BB0BF] mt-0.5">
-          Manage connected biomedical data sources, licensing compliance, ranking heuristics, and security
+            Inspect sample source listings, prototype settings, and TinyFish server configuration
         </p>
 
         {/* Settings Navigation Tabs */}
@@ -88,24 +96,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           {/* Data Ingestion Health Card */}
           <div className="p-5 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-sm space-y-3">
             <span className="text-xs font-semibold text-[#9BB0BF] uppercase tracking-wider block">
-              Ingestion Health & Provenance Audit
+              Prototype Source Inventory
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-slate-400 text-[10px]">Ingested Records</div>
-                <div className="text-teal-300 font-bold text-base mt-0.5">10.7M facts</div>
+                <div className="text-slate-400 text-[10px]">Sample source labels</div>
+                <div className="text-teal-300 font-bold text-base mt-0.5">{dataSources.length}</div>
               </div>
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-slate-400 text-[10px]">Duplicate Merges</div>
-                <div className="text-cyan-300 font-bold text-base mt-0.5">142,890</div>
+                <div className="text-slate-400 text-[10px]">Automated ingestion</div>
+                <div className="text-cyan-300 font-bold text-base mt-0.5">Not connected</div>
               </div>
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-slate-400 text-[10px]">Unmapped Ambiguities</div>
-                <div className="text-amber-300 font-bold text-base mt-0.5">18 (Quarantined)</div>
+                <div className="text-slate-400 text-[10px]">Entity resolution</div>
+                <div className="text-amber-300 font-bold text-base mt-0.5">Not implemented</div>
               </div>
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
-                <div className="text-slate-400 text-[10px]">TinyFish Live Sync</div>
-                <div className="text-emerald-400 font-bold text-base mt-0.5">Active (642 left)</div>
+                <div className="text-slate-400 text-[10px]">TinyFish server key</div>
+                <div className="text-emerald-400 font-bold text-base mt-0.5">{tinyFishConfigured === null ? 'Checking…' : tinyFishConfigured ? 'Configured' : 'Not configured'}</div>
               </div>
             </div>
           </div>
@@ -114,9 +122,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <div className="rounded-2xl bg-[#0A1B2B] border border-[#1C3648] overflow-hidden shadow-sm">
             <div className="p-4 bg-[#071321] border-b border-[#1C3648] flex items-center justify-between">
               <span className="font-bold text-sm text-slate-100">
-                Connected Biomedical Knowledge Repositories
+                Reference Sources · Demo Listings
               </span>
-              <span className="text-[10px] text-teal-400 font-mono">All licences audited</span>
+              <span className="text-[10px] text-amber-300 font-mono">Adapters are not connected</span>
             </div>
 
             <div className="divide-y divide-[#1C3648]/60 text-xs">
@@ -133,14 +141,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                       <div className="text-[11px] text-slate-400 mt-0.5">{ds.purpose}</div>
                     </div>
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 whitespace-nowrap self-start sm:self-auto">
-                      {ds.status}
+                          Demo listing
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[10px] text-slate-400 pt-1">
-                    <div>Records: <strong className="text-slate-200">{ds.records_count}</strong></div>
-                    <div>Last Retrieved: <strong className="text-slate-200">{ds.last_retrieval}</strong></div>
-                    <div className="text-teal-300">Licence: {ds.license_terms}</div>
+                    <div>Records: <strong className="text-slate-200">Illustrative</strong></div>
+                    <div>Last retrieved: <strong className="text-slate-200">Not connected</strong></div>
+                    <div className="text-teal-300">Licence note (verify): {ds.license_terms}</div>
                   </div>
 
                   {ds.warnings && (
@@ -156,8 +164,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
           {/* Licensing Gate Notice */}
           <div className="p-4 rounded-xl bg-slate-900/60 dark:bg-[#071321] border border-[#1C3648] text-[11px] text-[#8293A5] space-y-1 leading-relaxed">
-            <strong className="text-slate-300 block">Commercial Licensing Policy:</strong>
-            ReThera AI strictly respects database license terms. Open Targets Platform is CC0 1.0; ChEMBL data is CC BY-SA 3.0. DrugBank is purposefully excluded unless an enterprise commercial redistribution license is verified. TinyFish Search and Fetch query public and authorized records only.
+            <strong className="text-slate-300 block">Source and licensing note:</strong>
+            These source listings are examples. Confirm the licence and reuse terms for each upstream dataset before redistributing data. Live TinyFish requests send your search query and the URL you choose to the TinyFish API.
           </div>
         </div>
       )}
@@ -222,7 +230,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <div>
             <h3 className="font-bold text-sm text-slate-100 mb-1">Heuristic Ranking Weights</h3>
             <p className="text-[#9BB0BF]">
-              Calibrate multi-factor prioritization weights across biological support, measured pharmacology, and live web relevance.
+              Explore proposed factor weights for future work. These controls are a UI preview and do not change the static sample candidate scores.
             </p>
           </div>
 
@@ -296,29 +304,25 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <div>
             <h3 className="font-bold text-sm text-slate-100 mb-1">Security & TinyFish Credential Management</h3>
             <p className="text-[#9BB0BF]">
-              Credentials remain strictly server-side. Secret keys are never exposed in browser bundles or client requests.
+              The TinyFish API key is read by the local Node server and is never sent from the browser. Current server configuration: <strong className="text-teal-300">{tinyFishConfigured === null ? 'checking…' : tinyFishConfigured ? 'key configured' : 'no key configured'}</strong>.
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-[#071321] border border-[#1C3648] space-y-2 font-mono text-[11px]">
             <div className="flex justify-between items-center">
-              <span>TinyFish Search API Key:</span>
-              <span className="text-emerald-400 font-bold">•••••••••••••••••••••••• (Active Server-Side Secret)</span>
+              <span>Credential setup:</span>
+              <span className="text-slate-300">Local `.env` file or private host environment variable</span>
             </div>
             <div className="flex justify-between items-center">
-              <span>TinyFish Fetch API Key:</span>
-              <span className="text-emerald-400 font-bold">•••••••••••••••••••••••• (Encrypted in Secret Manager)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Client-Side Bundle Exposure Check:</span>
-              <span className="text-teal-300">0 Secrets Injected (Verified Compliant)</span>
+              <span>Search and Fetch:</span>
+              <span className="text-teal-300">Server-side proxy</span>
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-200 space-y-1">
-            <div className="font-bold text-teal-300">Data Isolation Guarantee</div>
+            <div className="font-bold text-teal-300">Prototype privacy boundary</div>
             <p className="text-[11px] leading-relaxed">
-              Proprietary internal candidate molecules and confidential research notes are never shared with public LLMs or web scrapers without explicit researcher opt-in.
+              This prototype sends your search query and selected source URL to TinyFish. Avoid entering confidential research details into live web searches.
             </p>
           </div>
         </div>

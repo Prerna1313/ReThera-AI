@@ -27,6 +27,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ type, value, size = 's
 
   if (type === 'direction') {
     switch (value) {
+      case 'unclear':
+        return (
+          <span className={`inline-flex items-center gap-1 rounded-full font-medium ${padding} bg-slate-500/15 text-slate-300 border border-slate-500/30`}>
+            <HelpCircle className="w-3 h-3" />
+            Unclear
+          </span>
+        );
       case 'supports':
         return (
           <span className={`inline-flex items-center gap-1 rounded-full font-medium ${padding} bg-emerald-500/15 text-emerald-400 border border-emerald-500/30`}>

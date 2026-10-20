@@ -51,6 +51,14 @@ export const App: React.FC = () => {
   const [compareCandidates, setCompareCandidates] = useState<Candidate[]>([]);
   const [isEvidenceDrawerOpen, setIsEvidenceDrawerOpen] = useState(false);
   const [activeEvidenceRecord, setActiveEvidenceRecord] = useState<EvidenceRecord | null>(null);
+  const [evidenceRecords, setEvidenceRecords] = useState<EvidenceRecord[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('rethera-live-evidence') || '[]');
+      return [...mockEvidenceRecords, ...(Array.isArray(saved) ? saved : [])];
+    } catch {
+      return mockEvidenceRecords;
+    }
+  });
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -67,6 +75,11 @@ export const App: React.FC = () => {
       localStorage.setItem('rethera-theme', 'light');
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const liveRecords = evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch');
+    localStorage.setItem('rethera-live-evidence', JSON.stringify(liveRecords));
+  }, [evidenceRecords]);
 
   // Global keyboard shortcuts (Ctrl/Cmd+K for search, ? for help, Esc for modal close)
   useEffect(() => {
@@ -120,9 +133,25 @@ export const App: React.FC = () => {
   };
 
   const handleOpenEvidenceReview = (evidenceId: string) => {
-    const found = mockEvidenceRecords.find(e => e.id === evidenceId) || mockEvidenceRecords[0];
+    const found = evidenceRecords.find(e => e.id === evidenceId);
+    if (!found) return;
     setActiveEvidenceRecord(found);
     setIsEvidenceDrawerOpen(true);
+  };
+
+  const handleAddEvidence = (record: EvidenceRecord) => {
+    setEvidenceRecords(current => [record, ...current]);
+    setActiveEvidenceRecord(record);
+    setIsEvidenceDrawerOpen(true);
+  };
+
+  const handleUpdateEvidence = (evidenceId: string, status: EvidenceRecord['review_status'], notes: string) => {
+    setEvidenceRecords(current => current.map(record => record.id === evidenceId
+      ? { ...record, review_status: status, reviewer_notes: notes, audit_trail: [...record.audit_trail, `Researcher review: ${status}`, ...(notes ? [`Reviewer note: ${notes}`] : [])] }
+      : record));
+    setActiveEvidenceRecord(current => current?.id === evidenceId
+      ? { ...current, review_status: status, reviewer_notes: notes, audit_trail: [...current.audit_trail, `Researcher review: ${status}`, ...(notes ? [`Reviewer note: ${notes}`] : [])] }
+      : current);
   };
 
   const handleRunInvestigationComplete = () => {
@@ -183,7 +212,7 @@ export const App: React.FC = () => {
         {/* View Content Body */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
           <div role="note" className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-200">
-            <strong>Prototype · Demo data.</strong> Scores, citations, molecular illustrations and evidence updates are illustrative and unverified. Live search and scientific models are not connected. Research workflow demonstration only.
+            <strong>Research prototype · sample analysis.</strong> Candidate scores, citations and molecular illustrations are demo data and are not scientifically validated. The Evidence Monitor can retrieve live sources through TinyFish when its server key is configured; retrieved pages remain unreviewed until a researcher checks them.
           </div>
           {viewingDossier ? (
             <div>
@@ -197,6 +226,7 @@ export const App: React.FC = () => {
               </div>
               <ResearchDossierScreen
                 candidates={mockCandidates}
+                evidenceRecords={evidenceRecords}
                 onNavigate={handleNavigate}
               />
             </div>
@@ -248,8 +278,9 @@ export const App: React.FC = () => {
 
               {currentTab === 'evidence-monitor' && (
                 <EvidenceMonitorScreen
-                  evidenceList={mockEvidenceRecords}
+                  evidenceList={evidenceRecords}
                   onOpenEvidenceDrawer={handleOpenEvidenceReview}
+                  onAddEvidence={handleAddEvidence}
                   onNavigate={handleNavigate}
                 />
               )}
@@ -302,6 +333,7 @@ export const App: React.FC = () => {
         evidence={activeEvidenceRecord}
         isOpen={isEvidenceDrawerOpen}
         onClose={() => setIsEvidenceDrawerOpen(false)}
+        onUpdateStatus={handleUpdateEvidence}
       />
 
       <HelpModal
