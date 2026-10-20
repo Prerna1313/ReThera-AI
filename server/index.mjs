@@ -6,7 +6,7 @@ import { createServer as createViteServer } from 'vite';
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const production = process.env.NODE_ENV === 'production';
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT || 3001);
 const allowedDomains = [
   'pubmed.ncbi.nlm.nih.gov', 'pmc.ncbi.nlm.nih.gov', 'europepmc.org',
   'clinicaltrials.gov', 'fda.gov', 'pubchem.ncbi.nlm.nih.gov',
@@ -220,7 +220,7 @@ const vite = production ? null : await createViteServer({
   appType: 'custom',
 });
 
-server.listen(port, production ? '0.0.0.0' : '127.0.0.1', () => {
+server.listen(port, production ? '0.0.0.0' : '::', () => {
   console.log(`ReThera AI ${production ? 'server' : 'development server'} listening on http://localhost:${port}`);
 });
 
