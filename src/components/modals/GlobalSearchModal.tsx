@@ -22,7 +22,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       category: 'Compounds',
       icon: <Boxes className="w-3.5 h-3.5 text-teal-400" />,
       items: [
-        { title: 'Tamoxifen', subtitle: 'CHEMBL83 • PubChem CID 2733527 • Priority: 0.92', tab: 'candidate-details' as NavigationTab, id: 'tamoxifen' },
+        { title: 'Tamoxifen', subtitle: 'CHEMBL83 • PubChem CID 2733526 • Priority: 0.92', tab: 'candidate-details' as NavigationTab, id: 'tamoxifen' },
         { title: 'Metformin', subtitle: 'CHEMBL1431 • PubChem CID 4091 • Priority: 0.87', tab: 'repurposing' as NavigationTab, id: 'metformin' },
         { title: 'Rapamycin (Sirolimus)', subtitle: 'CHEMBL415 • Priority: 0.83', tab: 'repurposing' as NavigationTab, id: 'rapamycin' },
       ],

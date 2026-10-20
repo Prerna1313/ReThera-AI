@@ -134,6 +134,7 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
             inchikey={candidate.inchikey}
             formula={candidate.formula}
             mw={candidate.mw}
+            pubchemCid={candidate.pubchem_cid}
           />
 
           {/* Key Physicochemical Properties Spec Card */}

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { GraphNode, GraphEdge, NavigationTab } from '../../types';
 import { KnowledgeGraphCanvas } from '../scientific/KnowledgeGraphCanvas';
-import { StatusBadge } from '../scientific/StatusBadge';
 import {
   Search,
   Filter,
@@ -49,14 +48,14 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
               INTERACTOME CANVAS
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              7 Nodes • 9 Verified Edges • 91.4% Avg Confidence
+              {filteredNodes.length} Nodes • {edges.filter(edge => filteredNodes.some(node => node.id === edge.source) && filteredNodes.some(node => node.id === edge.target)).length} Sample Relationships
             </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100">
             Biomedical Knowledge Graph Explorer
           </h1>
           <p className="text-xs text-[#9BB0BF] mt-0.5">
-            Explore provenance-preserving relationships between diseases, targets, compounds, and live evidence
+            Explore the illustrative relationship map. Example nodes and edges need source verification before research use.
           </p>
         </div>
 
@@ -116,7 +115,7 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
         <div className="lg:col-span-8 space-y-2">
           <KnowledgeGraphCanvas
             nodes={filteredNodes}
-            edges={edges}
+            edges={edges.filter(edge => filteredNodes.some(node => node.id === edge.source) && filteredNodes.some(node => node.id === edge.target))}
             selectedNodeId={selectedNode.id}
             onSelectNode={node => setSelectedNode(node)}
             onNavigateToCandidate={candId => onNavigate('candidate-details', candId)}
@@ -124,7 +123,7 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
 
           <div className="px-2 text-[10px] text-slate-400 font-mono flex items-center justify-between">
             <span>Tip: Click on any node to view inspector; click on any connecting edge to audit supporting evidence.</span>
-            <span>Force-Directed Engine Active</span>
+            <span>Sample graph layout</span>
           </div>
         </div>
 
@@ -150,19 +149,9 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
             {/* If Selected Node is Tamoxifen or Compound, render chemical thumbnail */}
             {selectedNode.type === 'compound' && (
               <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 uppercase font-mono">2D Skeletal Preview</span>
-                  <StatusBadge type="clinical" value="Approved" />
-                </div>
+                <span className="text-[10px] text-slate-400 uppercase font-mono">PubChem structure preview</span>
                 <div className="h-28 flex items-center justify-center bg-[#06111F] rounded-lg border border-slate-800">
-                  <svg viewBox="0 0 160 100" className="w-36 h-24">
-                    <line x1="60" y1="50" x2="90" y2="50" stroke="#31C5F4" strokeWidth="2.5" />
-                    <line x1="62" y1="46" x2="88" y2="46" stroke="#14D9B5" strokeWidth="1.5" />
-                    <polygon points="40,30 20,40 20,60 40,70 60,60 60,40" fill="none" stroke="#31C5F4" strokeWidth="2" />
-                    <polygon points="110,30 90,40 90,60 110,70 130,60 130,40" fill="none" stroke="#31C5F4" strokeWidth="2" />
-                    <circle cx="40" cy="50" r="10" fill="none" stroke="#14D9B5" strokeWidth="1" strokeDasharray="2 2" />
-                    <circle cx="110" cy="50" r="10" fill="none" stroke="#14D9B5" strokeWidth="1" strokeDasharray="2 2" />
-                  </svg>
+                  {selectedNode.meta.pubchem_cid ? <img src={`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${selectedNode.meta.pubchem_cid}/PNG?record_type=2d&image_size=300x180`} alt={`PubChem structure for ${selectedNode.label}`} className="h-full w-full object-contain p-2" /> : <span className="px-4 text-center text-[11px] text-slate-500">No compound identifier is linked to this sample node.</span>}
                 </div>
               </div>
             )}
@@ -179,30 +168,32 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Primary Indication:</span>
-                <span className="text-slate-200">Breast Cancer (ER+)</span>
+                <span className="text-slate-200">{String(selectedNode.meta.indication || selectedNode.meta.indications || selectedNode.label)}</span>
               </div>
             </div>
 
             {/* Evidence Statistics Box */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-center">
-                <div className="font-bold font-mono text-teal-300 text-sm">24</div>
+                <div className="font-bold font-mono text-teal-300 text-sm">{edges.filter(edge => edge.source === selectedNode.id || edge.target === selectedNode.id).length}</div>
                 <div className="text-[10px] text-slate-400">Supporting Records</div>
               </div>
 
               <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center">
-                <div className="font-bold font-mono text-rose-300 text-sm">2</div>
-                <div className="text-[10px] text-slate-400">Flagged Caveats</div>
+                <div className="font-bold font-mono text-rose-300 text-sm">{selectedNode.meta.priority_score != null ? `${Math.round(Number(selectedNode.meta.priority_score) * 100)}%` : '—'}</div>
+                <div className="text-[10px] text-slate-400">Sample priority</div>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="pt-2 space-y-2">
               <button
-                onClick={() => onNavigate('candidate-details', 'tamoxifen')}
+                onClick={() => selectedNode.type === 'compound'
+                  ? onNavigate('candidate-details', String(selectedNode.meta.candidate_id || selectedNode.id.replace('node-drug-', '')))
+                  : onNavigate('evidence-monitor')}
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#14D9B5] text-[#06111F] font-bold text-xs shadow-teal-glow hover:bg-[#10B981] transition-colors"
               >
-                View Candidate Details <ArrowRight className="w-3.5 h-3.5" />
+                {selectedNode.type === 'compound' ? 'View Candidate Details' : 'Search Live Evidence'} <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <button
@@ -216,7 +207,7 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
 
             {/* Illustrative Dataset Disclaimer */}
             <div className="p-3 rounded-lg bg-[#06111F] border border-slate-800 text-[10px] text-slate-400 leading-tight">
-              Illustrative Data — Graph edges correspond to curated ChEMBL/Open Targets records and PubMed literature extraction.
+              Illustrative graph fixture. Relationship labels and confidence values are demo metadata; source-level evidence is not attached or verified here.
             </div>
           </div>
         </div>

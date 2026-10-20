@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { RotateCw, Maximize2, Download, Copy, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { RotateCw, Copy, Check, ExternalLink } from 'lucide-react';
 
 interface MoleculeViewerProps {
   name: string;
@@ -7,392 +7,165 @@ interface MoleculeViewerProps {
   inchikey: string;
   formula: string;
   mw: number;
+  pubchemCid?: string;
 }
 
-interface Atom3D {
-  x: number;
-  y: number;
-  z: number;
-  element: 'C' | 'N' | 'O' | 'H';
-  radius: number;
-  color: string;
+type Atom = { x: number; y: number; z: number; element: string };
+type Bond = { from: number; to: number; order: number };
+type Structure = { atoms: Atom[]; bonds: Bond[] };
+
+function parseSdf(sdf: string): Structure | null {
+  const lines = sdf.split(/\r?\n/);
+  if (lines.length < 5) return null;
+  const atomCount = Number.parseInt(lines[3]?.slice(0, 3) || '', 10);
+  const bondCount = Number.parseInt(lines[3]?.slice(3, 6) || '', 10);
+  if (!Number.isFinite(atomCount) || atomCount < 1 || atomCount > 500 || !Number.isFinite(bondCount) || bondCount > 1000) return null;
+  const atoms: Atom[] = [];
+  for (let i = 0; i < atomCount; i++) {
+    const tokens = lines[4 + i]?.trim().split(/\s+/) || [];
+    const atom = { x: Number(tokens[0]), y: Number(tokens[1]), z: Number(tokens[2]), element: tokens[3] || 'C' };
+    if (![atom.x, atom.y, atom.z].every(Number.isFinite)) return null;
+    atoms.push(atom);
+  }
+  const bonds: Bond[] = [];
+  for (let i = 0; i < bondCount; i++) {
+    const tokens = lines[4 + atomCount + i]?.trim().split(/\s+/) || [];
+    const from = Number(tokens[0]) - 1;
+    const to = Number(tokens[1]) - 1;
+    const order = Number(tokens[2]) || 1;
+    if (from < 0 || to < 0 || from >= atoms.length || to >= atoms.length) return null;
+    bonds.push({ from, to, order });
+  }
+  return { atoms, bonds };
 }
 
-interface Bond3D {
-  from: number;
-  to: number;
-  order: number;
-}
+const elementColors: Record<string, string> = {
+  C: '#d9e4ed', N: '#618cff', O: '#ff647c', S: '#ffd166', P: '#ff9f43', F: '#76e3a5',
+  CL: '#76e3a5', BR: '#c88965', I: '#bb91ff', H: '#ffffff',
+};
 
-export const MoleculeViewer: React.FC<MoleculeViewerProps> = ({
-  name,
-  smiles,
-  inchikey,
-  formula,
-  mw,
-}) => {
+export const MoleculeViewer: React.FC<MoleculeViewerProps> = ({ name, smiles, inchikey, formula, mw, pubchemCid }) => {
   const [viewMode, setViewMode] = useState<'3D' | '2D'>('3D');
   const [copied, setCopied] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [rotation, setRotation] = useState({ x: 0.4, y: 0.6 });
+  const [structure, setStructure] = useState<Structure | null>(null);
+  const [structureStatus, setStructureStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [imageAvailable, setImageAvailable] = useState(true);
+  const [rotation, setRotation] = useState({ x: 0.3, y: 0.4 });
   const [isDragging, setIsDragging] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dragStart = useRef({ x: 0, y: 0 });
 
-  const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  // 3D coordinates for Tamoxifen molecular skeleton
-  const atoms: Atom3D[] = [
-    // Central alkene carbons
-    { x: 0, y: 0, z: 0, element: 'C', radius: 10, color: '#31C5F4' },
-    { x: 28, y: 0, z: 0, element: 'C', radius: 10, color: '#31C5F4' },
-    // Ethyl group
-    { x: -16, y: -22, z: 8, element: 'C', radius: 9, color: '#14D9B5' },
-    { x: -38, y: -28, z: -10, element: 'C', radius: 9, color: '#14D9B5' },
-    // Phenyl ring 1
-    { x: -18, y: 24, z: 0, element: 'C', radius: 9, color: '#31C5F4' },
-    { x: -38, y: 38, z: 6, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: -38, y: 64, z: 6, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: -18, y: 76, z: 0, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 2, y: 62, z: -6, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 2, y: 36, z: -6, element: 'C', radius: 8, color: '#31C5F4' },
-    // Phenyl ring 2
-    { x: 46, y: -22, z: 12, element: 'C', radius: 9, color: '#31C5F4' },
-    { x: 68, y: -32, z: 18, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 86, y: -20, z: 14, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 82, y: 2, z: 4, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 60, y: 12, z: -2, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 42, y: 0, z: 2, element: 'C', radius: 8, color: '#31C5F4' },
-    // Phenoxy ring + ethoxy + dimethylamine
-    { x: 38, y: 26, z: -12, element: 'C', radius: 9, color: '#31C5F4' },
-    { x: 58, y: 36, z: -20, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 66, y: 60, z: -24, element: 'C', radius: 8, color: '#31C5F4' },
-    { x: 88, y: 70, z: -30, element: 'O', radius: 11, color: '#FB7185' }, // Oxygen
-    { x: 96, y: 94, z: -32, element: 'C', radius: 8, color: '#14D9B5' },
-    { x: 118, y: 104, z: -36, element: 'C', radius: 8, color: '#14D9B5' },
-    { x: 132, y: 126, z: -40, element: 'N', radius: 11, color: '#7C73FF' }, // Nitrogen
-    { x: 154, y: 120, z: -44, element: 'C', radius: 7, color: '#14D9B5' },
-    { x: 130, y: 150, z: -46, element: 'C', radius: 7, color: '#14D9B5' },
-  ];
-
-  const bonds: Bond3D[] = [
-    { from: 0, to: 1, order: 2 },
-    { from: 0, to: 2, order: 1 },
-    { from: 2, to: 3, order: 1 },
-    { from: 0, to: 4, order: 1 },
-    { from: 4, to: 5, order: 2 },
-    { from: 5, to: 6, order: 1 },
-    { from: 6, to: 7, order: 2 },
-    { from: 7, to: 8, order: 1 },
-    { from: 8, to: 9, order: 2 },
-    { from: 9, to: 4, order: 1 },
-    { from: 1, to: 10, order: 1 },
-    { from: 10, to: 11, order: 2 },
-    { from: 11, to: 12, order: 1 },
-    { from: 12, to: 13, order: 2 },
-    { from: 13, to: 14, order: 1 },
-    { from: 14, to: 15, order: 2 },
-    { from: 15, to: 10, order: 1 },
-    { from: 1, to: 16, order: 1 },
-    { from: 16, to: 17, order: 2 },
-    { from: 17, to: 18, order: 1 },
-    { from: 18, to: 19, order: 1 },
-    { from: 19, to: 20, order: 1 },
-    { from: 20, to: 21, order: 1 },
-    { from: 21, to: 22, order: 1 },
-    { from: 22, to: 23, order: 1 },
-    { from: 22, to: 24, order: 1 },
-  ];
-
-  // Mouse interaction for 3D rotation
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    dragStart.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    setRotation(prev => ({
-      x: prev.x + dy * 0.01,
-      y: prev.y + dx * 0.01,
-    }));
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Render 3D Canvas
   useEffect(() => {
-    if (viewMode !== '3D' || !canvasRef.current) return;
+    setImageAvailable(true);
+    let active = true;
+    if (!pubchemCid || !/^\d+$/.test(pubchemCid)) {
+      setStructureStatus('unavailable');
+      return () => { active = false; };
+    }
+    setStructureStatus('loading');
+    fetch(`/api/pubchem/${pubchemCid}/conformer`)
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '3D conformer unavailable');
+        return parseSdf(data.sdf);
+      })
+      .then(parsed => {
+        if (!active) return;
+        setStructure(parsed);
+        setStructureStatus(parsed ? 'ready' : 'unavailable');
+      })
+      .catch(() => { if (active) setStructureStatus('unavailable'); });
+    return () => { active = false; };
+  }, [pubchemCid]);
+
+  const imageUrl = useMemo(() => pubchemCid && /^\d+$/.test(pubchemCid)
+    ? `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${pubchemCid}/PNG?record_type=2d&image_size=500x300`
+    : null, [pubchemCid]);
+
+  useEffect(() => {
+    if (viewMode !== '3D' || structureStatus !== 'ready' || !structure || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    let animationId: number;
-    let autoRotate = 0;
-
+    let frame = 0;
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const currentRotY = rotation.y + (isDragging ? 0 : autoRotate);
-      const currentRotX = rotation.x;
-
-      if (!isDragging) {
-        autoRotate += 0.005;
-      }
-
-      // Rotate and project atoms
-      const projected = atoms.map(atom => {
-        // Rotate around Y axis
-        const cosY = Math.cos(currentRotY);
-        const sinY = Math.sin(currentRotY);
-        const x1 = atom.x * cosY - atom.z * sinY;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(rect.width * dpr));
+      const height = Math.max(1, Math.round(rect.height * dpr));
+      if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+      ctx.clearRect(0, 0, width, height);
+      const cosY = Math.cos(rotation.y), sinY = Math.sin(rotation.y);
+      const cosX = Math.cos(rotation.x), sinX = Math.sin(rotation.x);
+      const rotated = structure.atoms.map(atom => {
+        const x = atom.x * cosY - atom.z * sinY;
         const z1 = atom.z * cosY + atom.x * sinY;
-
-        // Rotate around X axis
-        const cosX = Math.cos(currentRotX);
-        const sinX = Math.sin(currentRotX);
-        const y2 = atom.y * cosX - z1 * sinX;
-        const z2 = z1 * cosX + atom.y * sinX;
-
-        // Perspective scale
-        const scale = 250 / (250 + z2);
-        return {
-          px: centerX + x1 * scale * 1.5,
-          py: centerY + y2 * scale * 1.5,
-          pz: z2,
-          radius: atom.radius * scale * 1.2,
-          color: atom.color,
-          element: atom.element,
-        };
+        const y = atom.y * cosX - z1 * sinX;
+        const z = z1 * cosX + atom.y * sinX;
+        return { x, y, z, element: atom.element.toUpperCase() };
       });
-
-      // Draw bonds first
-      bonds.forEach(bond => {
-        const a1 = projected[bond.from];
-        const a2 = projected[bond.to];
-        if (!a1 || !a2) return;
-
-        ctx.beginPath();
-        ctx.moveTo(a1.px, a1.py);
-        ctx.lineTo(a2.px, a2.py);
-        ctx.strokeStyle = '#1C3648';
-        ctx.lineWidth = bond.order === 2 ? 5 : 3;
-        ctx.stroke();
-
-        // Inner luminous bond line
-        ctx.beginPath();
-        ctx.moveTo(a1.px, a1.py);
-        ctx.lineTo(a2.px, a2.py);
-        ctx.strokeStyle = '#31C5F4';
-        ctx.lineWidth = bond.order === 2 ? 2.5 : 1.5;
-        ctx.stroke();
+      const max = Math.max(...rotated.flatMap(a => [Math.abs(a.x), Math.abs(a.y), Math.abs(a.z)]), 1);
+      const scale = Math.min(width, height) * 0.38 / max;
+      const points = rotated.map(a => ({ x: width / 2 + a.x * scale, y: height / 2 - a.y * scale, z: a.z, element: a.element }));
+      structure.bonds.forEach(bond => {
+        const a = points[bond.from], b = points[bond.to];
+        if (!a || !b) return;
+        ctx.strokeStyle = '#708597'; ctx.lineWidth = Math.max(1.5, 2.5 * dpr); ctx.lineCap = 'round';
+        for (let line = 0; line < Math.min(3, bond.order); line++) {
+          const offset = (line - (Math.min(3, bond.order) - 1) / 2) * 3 * dpr;
+          const dx = b.x - a.x, dy = b.y - a.y, length = Math.hypot(dx, dy) || 1;
+          const ox = -dy / length * offset, oy = dx / length * offset;
+          ctx.beginPath(); ctx.moveTo(a.x + ox, a.y + oy); ctx.lineTo(b.x + ox, b.y + oy); ctx.stroke();
+        }
       });
-
-      // Sort atoms by Z for proper depth
-      const sortedIndices = projected
-        .map((atom, idx) => ({ idx, z: atom.pz }))
-        .sort((a, b) => a.z - b.z);
-
-      // Draw atoms
-      sortedIndices.forEach(({ idx }) => {
-        const atom = projected[idx];
-        if (!atom) return;
-
-        // Outer glow
-        const glowGradient = ctx.createRadialGradient(
-          atom.px, atom.py, atom.radius * 0.2,
-          atom.px, atom.py, atom.radius * 2.2
-        );
-        glowGradient.addColorStop(0, atom.color);
-        glowGradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = glowGradient;
-        ctx.beginPath();
-        ctx.arc(atom.px, atom.py, atom.radius * 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Sphere gradient
-        const sphereGrad = ctx.createRadialGradient(
-          atom.px - atom.radius * 0.3, atom.py - atom.radius * 0.3, atom.radius * 0.1,
-          atom.px, atom.py, atom.radius
-        );
-        sphereGrad.addColorStop(0, '#FFFFFF');
-        sphereGrad.addColorStop(0.3, atom.color);
-        sphereGrad.addColorStop(1, '#06111F');
-
-        ctx.fillStyle = sphereGrad;
-        ctx.beginPath();
-        ctx.arc(atom.px, atom.py, atom.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
+      [...points].sort((a, b) => a.z - b.z).forEach(atom => {
+        const radius = atom.element === 'C' || atom.element === 'H' ? 4.3 * dpr : 6.2 * dpr;
+        ctx.beginPath(); ctx.arc(atom.x, atom.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = elementColors[atom.element] || '#c6d0da'; ctx.fill();
+        if (!['C', 'H'].includes(atom.element)) {
+          ctx.fillStyle = '#071321'; ctx.font = `bold ${8 * dpr}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(atom.element, atom.x, atom.y);
+        }
       });
-
-      animationId = requestAnimationFrame(render);
     };
-
+    const resize = new ResizeObserver(render);
+    resize.observe(canvas);
     render();
+    frame = requestAnimationFrame(render);
+    return () => { resize.disconnect(); cancelAnimationFrame(frame); };
+  }, [viewMode, structure, structureStatus, rotation]);
 
-    return () => {
-      cancelAnimationFrame(animationId);
-    };
-  }, [viewMode, rotation, isDragging]);
+  const copy = async (text: string, key: string) => {
+    try { await navigator.clipboard.writeText(text); setCopied(key); window.setTimeout(() => setCopied(null), 1800); } catch { setCopied(null); }
+  };
+  const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    setIsDragging(true); dragStart.current = { x: event.clientX, y: event.clientY }; event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+    const dx = event.clientX - dragStart.current.x, dy = event.clientY - dragStart.current.y;
+    dragStart.current = { x: event.clientX, y: event.clientY };
+    setRotation(previous => ({ x: Math.max(-1.5, Math.min(1.5, previous.x + dy * 0.008)), y: previous.y + dx * 0.008 }));
+  };
 
-  return (
-    <div className="flex flex-col bg-slate-900/40 dark:bg-[#0A1B2B] rounded-xl border border-slate-700/60 dark:border-[#1C3648] overflow-hidden">
-      {/* Top Header Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/60 dark:border-[#1C3648] bg-slate-900/60 dark:bg-[#071321]">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-slate-100 dark:text-[#E8F3F7]">{name} Structure</span>
-          <span className="text-xs px-2 py-0.5 rounded bg-[#14D9B5]/15 text-[#14D9B5] border border-[#14D9B5]/30 font-mono">
-            {formula} • {mw} g/mol
-          </span>
+  return <section className="overflow-hidden rounded-xl border border-slate-700/60 bg-[#0A1B2B]" aria-label={`${name} molecular structure`}>
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1C3648] bg-[#071321] px-4 py-3">
+      <div><h3 className="text-sm font-semibold text-slate-100">{name} structure</h3><p className="text-[11px] text-slate-400">{formula} · {mw} g/mol · PubChem CID {pubchemCid || 'not linked'}</p></div>
+      <div className="flex items-center gap-2">
+        <div className="inline-flex rounded-lg border border-[#1C3648] bg-[#06111F] p-0.5">
+          {(['3D', '2D'] as const).map(mode => <button key={mode} type="button" onClick={() => setViewMode(mode)} className={`rounded-md px-3 py-1 text-xs font-semibold ${viewMode === mode ? 'bg-[#14D9B5] text-[#06111F]' : 'text-slate-400 hover:text-white'}`}>{mode}</button>)}
         </div>
-
-        {/* 2D / 3D Toggle */}
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg p-0.5 bg-slate-800 dark:bg-[#06111F] border border-slate-700 dark:border-[#1C3648]">
-            <button
-              onClick={() => setViewMode('3D')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                viewMode === '3D'
-                  ? 'bg-[#14D9B5] text-[#06111F] shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              3D
-            </button>
-            <button
-              onClick={() => setViewMode('2D')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                viewMode === '2D'
-                  ? 'bg-[#14D9B5] text-[#06111F] shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              2D
-            </button>
-          </div>
-
-          <button
-            title="Reset rotation"
-            onClick={() => setRotation({ x: 0.4, y: 0.6 })}
-            className="p-1.5 rounded-lg border border-slate-700 dark:border-[#1C3648] text-slate-400 hover:text-teal-400 hover:border-teal-500/40 transition-colors"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <button type="button" title="Reset 3D rotation" onClick={() => setRotation({ x: 0.3, y: 0.4 })} className="rounded-lg border border-[#1C3648] p-1.5 text-slate-400 hover:text-teal-300"><RotateCw className="h-3.5 w-3.5" /></button>
       </div>
-
-      {/* Main Canvas / Structure Area */}
-      <div className="relative h-72 md:h-80 w-full flex items-center justify-center bg-radial-gradient">
-        {name !== 'Tamoxifen' ? (
-          <p className="px-6 text-center text-sm text-slate-300">Structure preview unavailable for {name}. Compound identifiers are shown below.</p>
-        ) : viewMode === '3D' ? (
-          <canvas
-            ref={canvasRef}
-            width={520}
-            height={320}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            className="cursor-grab active:cursor-grabbing w-full h-full"
-          />
-        ) : (
-          /* High-Fidelity 2D Skeletal Formula Vector */
-          <div className="p-6 flex flex-col items-center justify-center">
-            <svg viewBox="0 0 420 220" className="w-80 h-48 drop-shadow-lg">
-              {/* Central alkene */}
-              <line x1="160" y1="110" x2="200" y2="110" stroke="#31C5F4" strokeWidth="4" />
-              <line x1="164" y1="104" x2="196" y2="104" stroke="#14D9B5" strokeWidth="2.5" />
-              {/* Ethyl */}
-              <line x1="160" y1="110" x2="135" y2="85" stroke="#31C5F4" strokeWidth="3" />
-              <line x1="135" y1="85" x2="105" y2="90" stroke="#31C5F4" strokeWidth="3" />
-              {/* Phenyl 1 */}
-              <line x1="160" y1="110" x2="140" y2="145" stroke="#31C5F4" strokeWidth="3" />
-              <polygon points="140,145 110,145 95,170 110,195 140,195 155,170" fill="none" stroke="#31C5F4" strokeWidth="2.5" />
-              <circle cx="125" cy="170" r="14" fill="none" stroke="#14D9B5" strokeWidth="1.5" strokeDasharray="3 3" />
-              {/* Phenyl 2 */}
-              <line x1="200" y1="110" x2="225" y2="80" stroke="#31C5F4" strokeWidth="3" />
-              <polygon points="225,80 255,80 270,55 255,30 225,30 210,55" fill="none" stroke="#31C5F4" strokeWidth="2.5" />
-              <circle cx="240" cy="55" r="14" fill="none" stroke="#14D9B5" strokeWidth="1.5" strokeDasharray="3 3" />
-              {/* Phenoxy ether */}
-              <line x1="200" y1="110" x2="220" y2="140" stroke="#31C5F4" strokeWidth="3" />
-              <polygon points="220,140 250,140 265,165 250,190 220,190 205,165" fill="none" stroke="#31C5F4" strokeWidth="2.5" />
-              <circle cx="235" cy="165" r="14" fill="none" stroke="#14D9B5" strokeWidth="1.5" strokeDasharray="3 3" />
-              {/* Ether bond to Oxygen */}
-              <line x1="265" y1="165" x2="290" y2="165" stroke="#31C5F4" strokeWidth="3" />
-              <text x="294" y="170" fill="#FB7185" fontSize="14" fontWeight="bold">O</text>
-              {/* Ethoxy chain to Nitrogen */}
-              <line x1="308" y1="165" x2="330" y2="165" stroke="#31C5F4" strokeWidth="3" />
-              <line x1="330" y1="165" x2="350" y2="145" stroke="#31C5F4" strokeWidth="3" />
-              <text x="354" y="150" fill="#7C73FF" fontSize="14" fontWeight="bold">N</text>
-              {/* Dimethyl group */}
-              <line x1="368" y1="145" x2="390" y2="130" stroke="#31C5F4" strokeWidth="3" />
-              <line x1="362" y1="155" x2="375" y2="180" stroke="#31C5F4" strokeWidth="3" />
-            </svg>
-            <span className="text-[11px] text-slate-400 font-mono mt-2">
-              (Z)-2-[4-(1,2-diphenylbut-1-en-1-yl)phenoxy]-N,N-dimethylethanamine
-            </span>
-          </div>
-        )}
-
-        {/* HUD Telemetry Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1 pointer-events-none text-[10px] font-mono">
-          <span className="px-2 py-0.5 rounded bg-slate-950/80 text-teal-300 border border-teal-500/30">
-            Illustrative structure · not computed from SMILES
-          </span>
-          <span className="px-2 py-0.5 rounded bg-slate-950/80 text-cyan-300 border border-cyan-500/30">
-            No validated conformation available
-          </span>
-        </div>
-
-        <div className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-mono bg-slate-950/70 px-2 py-1 rounded border border-slate-800">
-          {name === 'Tamoxifen' && viewMode === '3D' ? 'Drag to rotate illustration' : 'Unvalidated prototype preview'}
-        </div>
-      </div>
-
-      {/* SMILES & InChIKey Footer */}
-      <div className="p-3 bg-slate-950/60 dark:bg-[#071321] border-t border-slate-700/60 dark:border-[#1C3648] text-xs font-mono space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="text-slate-400 text-[10px] uppercase font-semibold">SMILES</span>
-            <span className="text-teal-300 truncate text-[11px] select-all">{smiles}</span>
-          </div>
-          <button
-            onClick={() => handleCopy(smiles, 'smiles')}
-            className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-          >
-            {copied === 'smiles' ? <Check className="w-3 h-3 text-teal-400" /> : <Copy className="w-3 h-3" />}
-            {copied === 'smiles' ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="text-slate-400 text-[10px] uppercase font-semibold">InChIKey</span>
-            <span className="text-cyan-300 truncate text-[11px] select-all">{inchikey}</span>
-          </div>
-          <button
-            onClick={() => handleCopy(inchikey, 'inchikey')}
-            className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-          >
-            {copied === 'inchikey' ? <Check className="w-3 h-3 text-cyan-400" /> : <Copy className="w-3 h-3" />}
-            {copied === 'inchikey' ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-      </div>
+    </header>
+    <div className="relative flex h-72 w-full items-center justify-center bg-[#06111F]">
+      {viewMode === '2D' && imageUrl && imageAvailable ? <img src={imageUrl} alt={`PubChem 2D structure of ${name}`} className="h-full w-full object-contain p-5" onError={() => setImageAvailable(false)} />
+        : viewMode === '3D' && structureStatus === 'ready' ? <canvas ref={canvasRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setIsDragging(false)} onPointerCancel={() => setIsDragging(false)} className="h-full w-full cursor-grab touch-none active:cursor-grabbing" aria-label="Interactive PubChem 3D conformer; drag to rotate" />
+        : <div className="max-w-sm px-5 text-center text-sm text-slate-300">{viewMode === '3D' && structureStatus === 'loading' ? 'Loading PubChem 3D conformer…' : viewMode === '3D' ? 'No 3D conformer is available for this PubChem record. Try the 2D structure.' : !pubchemCid ? 'A PubChem CID is needed to load the registered 2D structure.' : 'PubChem could not load a 2D image for this record.'}</div>}
+      <div className="absolute bottom-2 left-3 rounded bg-slate-950/80 px-2 py-1 text-[10px] text-slate-400">{viewMode === '2D' ? '2D structure · PubChem' : structureStatus === 'ready' ? '3D conformer · PubChem · drag to rotate' : 'Structure data from PubChem'}</div>
     </div>
-  );
+    <footer className="space-y-2 border-t border-[#1C3648] bg-[#071321] p-3 text-xs font-mono">
+      {[['SMILES', smiles, 'smiles'], ['InChIKey', inchikey, 'inchikey']].map(([label, value, key]) => <div key={key} className="flex items-center justify-between gap-2"><div className="flex min-w-0 items-center gap-2"><span className="shrink-0 text-[10px] font-semibold uppercase text-slate-400">{label}</span><span className="truncate text-[11px] text-teal-300 select-all">{value}</span></div><button type="button" onClick={() => copy(value, key)} className="flex shrink-0 items-center gap-1 rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-300">{copied === key ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied === key ? 'Copied' : 'Copy'}</button></div>)}
+      {pubchemCid && <a href={`https://pubchem.ncbi.nlm.nih.gov/compound/${pubchemCid}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-cyan-300 hover:underline">Open PubChem record <ExternalLink className="h-3 w-3" /></a>}
+    </footer>
+  </section>;
 };

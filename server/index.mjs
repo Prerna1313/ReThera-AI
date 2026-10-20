@@ -117,6 +117,19 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { tinyfishConfigured: Boolean(process.env.TINYFISH_API_KEY) });
   }
 
+  const pubchemMatch = url.pathname.match(/^\/api\/pubchem\/(\d+)\/conformer$/);
+  if (pubchemMatch && request.method === 'GET') {
+    const cid = pubchemMatch[1];
+    const upstream = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/SDF?record_type=3d`, {
+      headers: { accept: 'chemical/x-mdl-sdfile, text/plain' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!upstream.ok) return sendJson(response, upstream.status === 404 ? 404 : 502, { error: upstream.status === 404 ? 'PubChem has no 3D conformer for this compound.' : 'PubChem could not return a 3D conformer right now.' });
+    const sdf = (await upstream.text()).slice(0, 1_000_000);
+    if (!sdf.includes('M  END')) return sendJson(response, 502, { error: 'PubChem returned an unreadable 3D conformer.' });
+    return sendJson(response, 200, { cid, sdf, source: `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}` });
+  }
+
   if (url.pathname === '/api/tinyfish/search' && request.method === 'POST') {
     const body = await readJson(request);
     const query = typeof body.query === 'string' ? body.query.trim() : '';

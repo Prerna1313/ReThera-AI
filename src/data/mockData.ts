@@ -6,7 +6,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
     rank: 1,
     name: 'Tamoxifen',
     chembl_id: 'CHEMBL83',
-    pubchem_cid: '2733527',
+    pubchem_cid: '2733526',
     formula: 'C26H29NO',
     mw: 371.51,
     logp: 5.35,
@@ -652,7 +652,7 @@ export const MOCK_GRAPH_NODES: GraphNode[] = [
     color: '#14D9B5',
     border_color: '#54FCD6',
     meta: {
-      pubchem_cid: '2733527',
+      pubchem_cid: '2733526',
       status: 'Approved',
       priority_score: 0.92,
       indications: 'Breast Cancer, Ovarian',
