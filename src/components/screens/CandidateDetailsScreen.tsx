@@ -21,6 +21,7 @@ import {
 
 interface CandidateDetailsScreenProps {
   candidate: Candidate;
+  evidenceRecords: EvidenceRecord[];
   onBack: () => void;
   onNavigate: (tab: NavigationTab) => void;
   onOpenEvidenceReview: (evidenceId: string) => void;
@@ -28,12 +29,17 @@ interface CandidateDetailsScreenProps {
 
 export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
   candidate,
+  evidenceRecords,
   onBack,
   onNavigate,
   onOpenEvidenceReview,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'targets' | 'evidence' | 'trials' | 'properties' | 'related'>('overview');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
+  const linkedLiveEvidence = evidenceRecords.filter(record =>
+    record.source_provider === 'TinyFish Search & Fetch' &&
+    record.linked_compounds.some(name => name.toLowerCase() === candidate.name.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 pb-16">
@@ -54,11 +60,8 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
                 {candidate.name}
               </h1>
               <StatusBadge type="clinical" value={candidate.clinical_status} />
-              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Oncology Baseline
-              </span>
-              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                SERM
+              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/10 text-amber-200 border border-amber-500/20">
+                Illustrative candidate fixture
               </span>
             </div>
 
@@ -67,9 +70,7 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
               <span>•</span>
               <span>PubChem CID: <strong className="text-slate-200">{candidate.pubchem_cid}</strong></span>
               <span>•</span>
-              <span>CAS: <strong className="text-slate-200">10540-29-1</strong></span>
-              <span>•</span>
-              <span>Priority Score: <strong className="text-teal-400 font-bold">{candidate.priority_score.toFixed(2)}</strong></span>
+              <span>Sample priority score: <strong className="text-teal-400 font-bold">{candidate.priority_score.toFixed(2)}</strong></span>
             </div>
           </div>
 
@@ -102,8 +103,8 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
           {[
             { id: 'overview', label: 'Overview' },
             { id: 'targets', label: 'Targets & Affinity' },
-            { id: 'evidence', label: 'Balanced Evidence (6)' },
-            { id: 'trials', label: 'Clinical Trials (48)' },
+            { id: 'evidence', label: `Evidence (${candidate.supporting_evidence.length + candidate.contradictory_evidence.length + linkedLiveEvidence.length})` },
+            { id: 'trials', label: 'Clinical trials (sample)' },
             { id: 'properties', label: 'Properties & ADMET' },
             { id: 'related', label: 'Similar Analogues' },
           ].map(tab => (
@@ -306,7 +307,7 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
             Triangulated Clinical, Genomic & Experimental Evidence Dossier
           </h2>
           <span className="text-xs font-mono text-slate-400">
-            6 Normalized Records • 2 Conflicting Findings Flagged
+            Example analysis · live records shown separately
           </span>
         </div>
 
@@ -395,6 +396,32 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {linkedLiveEvidence.length > 0 && (
+        <section className="rounded-2xl border border-cyan-500/30 bg-[#0A1B2B] p-5 space-y-3" aria-labelledby="live-linked-evidence-title">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1C3648] pb-3">
+            <div>
+              <h2 id="live-linked-evidence-title" className="font-bold text-slate-100">Live sources linked by the researcher</h2>
+              <p className="mt-1 text-xs text-slate-400">Fetched with TinyFish. These records do not affect the sample priority score and require source review.</p>
+            </div>
+            <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-200">{linkedLiveEvidence.length} saved</span>
+          </div>
+          {linkedLiveEvidence.map(record => (
+            <article key={record.id} className="rounded-xl border border-[#1C3648] bg-[#071321] p-3 space-y-2">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <a className="text-sm font-semibold text-cyan-200 hover:underline" href={record.url} target="_blank" rel="noreferrer">{record.title} ↗</a>
+                <span className="text-[10px] text-amber-200">{record.review_status}</span>
+              </div>
+              <p className="line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed text-slate-300">{record.claim}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+                <span>{record.category} · {record.direction} · Retrieved {new Date(record.retrieved_date).toLocaleDateString()}</span>
+                <button type="button" onClick={() => onOpenEvidenceReview(record.id)} className="font-semibold text-teal-300 hover:underline">Review source and audit note</button>
+              </div>
+              {record.linked_targets.length > 0 && <div className="text-[10px] text-slate-500">Researcher-linked target: {record.linked_targets.join(', ')}</div>}
+            </article>
+          ))}
+        </section>
+      )}
 
       {/* Synthesis Callout Boxes: "Why this candidate?" & "What could weaken this hypothesis?" */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

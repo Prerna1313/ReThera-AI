@@ -20,14 +20,16 @@ The intended workflow brings together biomedical databases, experimental finding
 
 Requires Node.js 20.6+ and npm. To enable TinyFish, copy `.env.example` to `.env` and add your own API key. The key is read by the local Node server and is never sent to the browser.
 
-```sh
+```powershell
 npm ci
 Copy-Item .env.example .env
 # Edit .env and replace the example value with your TinyFish API key.
 npm run dev
 ```
 
-Open `http://localhost:3000`, select **Evidence Monitor**, enter a focused biomedical query, and choose **Search TinyFish**. Choose a result from an approved biomedical or regulatory source, fetch its page, inspect the returned text, and save it to the evidence ledger. The new record is persisted in that browser's local storage and starts as unreviewed. Open the audit drawer to add a review note and confirm or flag the source. If no key is configured, the screen explains how to set one up. The API key never appears in frontend code or search/fetch responses.
+The OAuth connection configured for Codex's MCP tools is separate from this standalone app's server credential. The local app currently authenticates its TinyFish Search and Fetch requests with `TINYFISH_API_KEY`; it does not inherit Codex's OAuth session.
+
+Open `http://localhost:3000`, select **Evidence Monitor**, enter a focused biomedical query, and choose **Search TinyFish**. Choose a result from an approved biomedical or regulatory source, fetch its page, inspect the returned text, link it to a shortlist candidate and target, and save it to the evidence ledger. Those links and any initial evidence labels are researcher annotations, not automated extraction. The record is persisted in that browser's local storage and starts as unreviewed. Open the audit drawer to add a review note and confirm or flag the source. Linked live sources appear on the candidate detail page; they do not change the sample priority score. If no key is configured, the screen explains how to set one up. The API key never appears in frontend code or search/fetch responses.
 
 The prototype uses TinyFish Search and Fetch directly; it does not use Agent or Browser. TinyFish currently lists Search and Fetch as free within provider limits. Check [TinyFish pricing](https://www.tinyfish.ai/pricing) for current quotas and terms.
 
@@ -42,7 +44,7 @@ npm run build
 
 ## Prototype scope
 
-The candidate rankings, scientific examples, citations, graph records, and dossier are illustrative fixtures, not validated findings. TinyFish is used only for explicit Search and researcher-selected Fetch requests in Evidence Monitor. Retrieved text is stored without automated scientific interpretation, and remains pending researcher review. The live evidence ledger is stored in browser local storage. It does not alter the sample candidate ranking or the static example dossier. No scientific models are connected; molecule-generation and ADMET predictions are not performed.
+The candidate rankings, scientific examples, citations, graph records, and dossier are illustrative fixtures, not validated findings. TinyFish is used only for explicit Search and researcher-selected Fetch requests in Evidence Monitor. Retrieved text is stored without automated scientific interpretation, and remains pending researcher review. The live evidence ledger is stored in browser local storage. Researcher-linked sources appear on the selected candidate's detail page but do not alter the sample candidate ranking or static example dossier. No scientific models are connected; molecule-generation and ADMET predictions are not performed.
 
 The workbench demonstrates one breast cancer investigation. Target and clinical-status filters operate on the supplied sample candidates. TinyFish search results are limited to HTTPS sources on the server's approved domain list: PubMed, Europe PMC, ClinicalTrials.gov, FDA, PubChem, and Open Targets. Empty results, unavailable credentials, and provider errors are surfaced in the interface. No LLM extraction or automatic support/contradiction assignment is performed.
 

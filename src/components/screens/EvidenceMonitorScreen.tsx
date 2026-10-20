@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { EvidenceCategory, EvidenceDirection, EvidenceRecord, NavigationTab } from '../../types';
+import { Candidate, EvidenceCategory, EvidenceDirection, EvidenceRecord, NavigationTab } from '../../types';
 import { StatusBadge } from '../scientific/StatusBadge';
 import {
   Search,
@@ -31,6 +31,7 @@ interface TinyFishFetchedPage extends TinyFishSearchResult {
 }
 
 interface EvidenceMonitorScreenProps {
+  candidates: Candidate[];
   evidenceList: EvidenceRecord[];
   onOpenEvidenceDrawer: (evidenceId: string) => void;
   onAddEvidence: (record: EvidenceRecord) => void;
@@ -38,6 +39,7 @@ interface EvidenceMonitorScreenProps {
 }
 
 export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
+  candidates,
   evidenceList,
   onOpenEvidenceDrawer,
   onAddEvidence,
@@ -55,6 +57,9 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   const [liveError, setLiveError] = useState('');
   const [evidenceType, setEvidenceType] = useState<EvidenceCategory>('E0: Unclassified source');
   const [evidenceDirection, setEvidenceDirection] = useState<EvidenceDirection>('unclear');
+  const [linkedCandidateId, setLinkedCandidateId] = useState(candidates[0]?.id || '');
+  const selectedCandidate = candidates.find(candidate => candidate.id === linkedCandidateId);
+  const [linkedTarget, setLinkedTarget] = useState(selectedCandidate?.predicted_target || '');
 
   useEffect(() => {
     fetch('/api/health')
@@ -111,6 +116,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
 
   const handleSaveFetchedEvidence = () => {
     if (!fetchedPage) return;
+    const candidate = candidates.find(item => item.id === linkedCandidateId);
     const record: EvidenceRecord = {
       id: `live-tinyfish-${crypto.randomUUID()}`,
       title: fetchedPage.title,
@@ -118,9 +124,9 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       source_provider: 'TinyFish Search & Fetch',
       published_date: fetchedPage.publishedDate || 'Not provided — check source',
       retrieved_date: fetchedPage.retrievedAt,
-      linked_compounds: [],
-      linked_targets: [],
-      linked_diseases: [],
+      linked_compounds: candidate ? [candidate.name] : [],
+      linked_targets: linkedTarget ? [linkedTarget] : [],
+      linked_diseases: ['Breast Cancer (ER+)'],
       claim: fetchedPage.content,
       category: evidenceType,
       direction: evidenceDirection,
@@ -130,6 +136,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         `TinyFish Search query: ${tinyfishQuery.trim()}`,
         `Selected source: ${fetchedPage.url}`,
         `TinyFish Fetch completed: ${fetchedPage.retrievedAt}`,
+        `Researcher linked this source to ${candidate?.name || 'no candidate'}${linkedTarget ? ` and target ${linkedTarget}` : ''} for Breast Cancer (ER+).`,
         'Classification entered by the researcher; source confirmation is still required.',
       ],
     };
@@ -271,6 +278,18 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
             <a className="block text-xs text-cyan-300 hover:underline" href={fetchedPage.url} target="_blank" rel="noreferrer">{fetchedPage.title} ↗</a>
             <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[#1C3648] bg-[#06111F] p-3 text-xs leading-relaxed text-slate-300">{fetchedPage.content}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="space-y-1 text-xs text-slate-300">Research candidate link
+                <select value={linkedCandidateId} onChange={event => {
+                  const nextCandidate = candidates.find(candidate => candidate.id === event.target.value);
+                  setLinkedCandidateId(event.target.value);
+                  setLinkedTarget(nextCandidate?.predicted_target || '');
+                }} className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100">
+                  {candidates.map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.known_indication}</option>)}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs text-slate-300">Target link
+                <input value={linkedTarget} onChange={event => setLinkedTarget(event.target.value)} maxLength={100} placeholder="Enter a target, or leave blank" className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100 placeholder:text-slate-500" />
+              </label>
               <label className="space-y-1 text-xs text-slate-300">Evidence type
                 <select value={evidenceType} onChange={event => setEvidenceType(event.target.value as EvidenceCategory)} className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100">
                   <option value="E0: Unclassified source">Unclassified — review later</option>
@@ -290,7 +309,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
                 </select>
               </label>
             </div>
-            <p className="text-[11px] text-amber-200">Your initial assessment is saved as unreviewed. Confirm the source in the evidence drawer before treating it as verified.</p>
+            <p className="text-[11px] text-amber-200">Candidate, target, evidence type, and direction are your research annotations; ReThera does not infer them from the page. The source is saved as unreviewed until you confirm it in the evidence drawer.</p>
             <button type="button" onClick={handleSaveFetchedEvidence} className="rounded-lg bg-teal-400 px-4 py-2 text-sm font-semibold text-[#06111F]">Save to evidence ledger</button>
           </div>
         )}

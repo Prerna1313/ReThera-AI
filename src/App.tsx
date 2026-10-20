@@ -253,6 +253,7 @@ export const App: React.FC = () => {
               {currentTab === 'candidate-details' && (
                 <CandidateDetailsScreen
                   candidate={currentCandidate}
+                  evidenceRecords={evidenceRecords}
                   onBack={() => handleNavigate('repurposing')}
                   onNavigate={handleNavigate}
                   onOpenEvidenceReview={handleOpenEvidenceReview}
@@ -278,6 +279,7 @@ export const App: React.FC = () => {
 
               {currentTab === 'evidence-monitor' && (
                 <EvidenceMonitorScreen
+                  candidates={mockCandidates}
                   evidenceList={evidenceRecords}
                   onOpenEvidenceDrawer={handleOpenEvidenceReview}
                   onAddEvidence={handleAddEvidence}
