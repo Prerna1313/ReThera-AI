@@ -50,7 +50,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
     () => evidenceList.find(record => record.source_provider === 'TinyFish Search & Fetch') || evidenceList[0],
   );
   const [searchQuery, setSearchQuery] = useState('');
-  const [tinyfishQuery, setTinyfishQuery] = useState('Tamoxifen ESR1 resistance breast cancer clinical study');
+  const [tinyfishQuery, setTinyfishQuery] = useState('metformin Alzheimer disease clinical study');
   const [tinyfishConfigured, setTinyfishConfigured] = useState<boolean | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [fetchingUrl, setFetchingUrl] = useState<string | null>(null);
@@ -67,6 +67,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   const [linkedCandidateId, setLinkedCandidateId] = useState(candidates[0]?.id || '');
   const selectedCandidate = candidates.find(candidate => candidate.id === linkedCandidateId);
   const [linkedTarget, setLinkedTarget] = useState(selectedCandidate?.predicted_target || '');
+  const [linkedDisease, setLinkedDisease] = useState(selectedCandidate?.known_indication || '');
 
   useEffect(() => {
     fetch('/api/health')
@@ -137,7 +138,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       retrieved_date: fetchedPage.retrievedAt,
       linked_compounds: candidate ? [candidate.name] : [],
       linked_targets: linkedTarget ? [linkedTarget] : [],
-      linked_diseases: ['Breast Cancer (ER+)'],
+      linked_diseases: linkedDisease.trim() ? [linkedDisease.trim()] : [],
       claim: fetchedPage.content,
       category: evidenceType,
       direction: evidenceDirection,
@@ -153,7 +154,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         `TinyFish Search query: ${tinyfishQuery.trim()}`,
         `Selected source: ${fetchedPage.url}`,
         `TinyFish Fetch completed: ${fetchedPage.retrievedAt}`,
-        `Researcher linked this source to ${candidate?.name || 'no candidate'}${linkedTarget ? ` and target ${linkedTarget}` : ''} for Breast Cancer (ER+).`,
+        `Researcher linked this source to ${candidate?.name || 'no candidate'}${linkedTarget ? ` and target ${linkedTarget}` : ''}${linkedDisease ? ` for ${linkedDisease}` : ''}.`,
         'Classification entered by the researcher; source confirmation is still required.',
       ],
     };
@@ -315,9 +316,10 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         </div>
         <div className="rounded-xl border border-[#1C3648] bg-[#071321] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-slate-200">Evaluation demo · one repeatable research question</span>
-            <button type="button" onClick={() => setTinyfishQuery('Tamoxifen ESR1 resistance breast cancer clinical study')} className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-100">Reset demo question</button>
+            <span className="text-xs font-semibold text-slate-200">Explore a condition, target, compound, or trial</span>
+            <button type="button" onClick={() => setTinyfishQuery('metformin Alzheimer disease clinical study')} className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-100">Try an Alzheimer’s example</button>
           </div>
+          <p className="mt-2 text-[11px] text-slate-400">Examples: Parkinson’s disease and GLP-1 drugs · metformin and Alzheimer’s · aspirin and colorectal cancer · any question you choose.</p>
           <ol className="mt-2 grid gap-1 text-[11px] text-slate-400 sm:grid-cols-4">
             <li><span className="text-cyan-300">1.</span> Search literature</li>
             <li><span className="text-cyan-300">2.</span> Fetch a source</li>
@@ -374,9 +376,13 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
                   const nextCandidate = candidates.find(candidate => candidate.id === event.target.value);
                   setLinkedCandidateId(event.target.value);
                   setLinkedTarget(nextCandidate?.predicted_target || '');
+                  if (nextCandidate) setLinkedDisease(nextCandidate.known_indication);
                 }} className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100">
-                  {candidates.map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.known_indication}</option>)}
+                  <option value="">No sample compound</option>{candidates.map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.known_indication}</option>)}
                 </select>
+              </label>
+              <label className="space-y-1 text-xs text-slate-300">Disease / research area
+                <input value={linkedDisease} onChange={event => setLinkedDisease(event.target.value)} maxLength={120} placeholder="e.g. Alzheimer's disease, Parkinson's disease, lung cancer" className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100 placeholder:text-slate-500" />
               </label>
               <label className="space-y-1 text-xs text-slate-300">Target link
                 <input value={linkedTarget} onChange={event => setLinkedTarget(event.target.value)} maxLength={100} placeholder="Enter a target, or leave blank" className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100 placeholder:text-slate-500" />

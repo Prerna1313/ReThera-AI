@@ -27,11 +27,11 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
   onRunComplete,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [disease, setDisease] = useState('Breast Cancer (MONDO:0004980)');
-  const [target, setTarget] = useState('ESR1 — Estrogen receptor alpha (P03372)');
-  const [compound, setCompound] = useState('Tamoxifen (CHEMBL83)');
+  const [disease, setDisease] = useState('Breast Cancer (ER+)');
+  const [target, setTarget] = useState('ESR1');
+  const [compound, setCompound] = useState('');
   const [question, setQuestion] = useState(
-    'Identify existing approved compounds with high biological affinity and clinical support for Breast Cancer (ESR1 / PI3K pathways).'
+    'Investigate whether existing therapies have evidence worth exploring for this condition. Include evidence for, against, study context, and research gaps.'
   );
   const [investigationType, setInvestigationType] = useState('repurpose-approved');
   const [selectedSources, setSelectedSources] = useState<string[]>([
@@ -146,30 +146,28 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="block font-semibold text-slate-200 mb-1">Target Disease or Indication</label>
-                    <select
+                    <input
+                      list="disease-options"
                       value={disease}
                       onChange={e => setDisease(e.target.value)}
+                      placeholder="Enter any disease or indication"
                       className="w-full p-2.5 rounded-lg bg-[#071321] border border-[#1C3648] text-slate-100 text-xs focus:border-teal-400 focus:outline-none"
-                    >
-                      <option>Breast Cancer (MONDO:0004980)</option>
-                      <option>Alzheimer's Disease (MONDO:0004975)</option>
-                      <option>Type 2 Diabetes Mellitus (MONDO:0005148)</option>
-                      <option>Solid Tumors (MONDO:0005070)</option>
-                    </select>
+                    />
+                    <datalist id="disease-options">
+                      <option value="Alzheimer's disease" /><option value="Type 2 diabetes" /><option value="Parkinson's disease" /><option value="Lung cancer" /><option value="Cardiovascular disease" /><option value="Rheumatoid arthritis" /><option value="Breast cancer (ER+)" />
+                    </datalist>
                   </div>
 
                   <div>
                     <label className="block font-semibold text-slate-200 mb-1">Target Protein or Biomarker</label>
-                    <select
+                    <input
+                      list="target-options"
                       value={target}
                       onChange={e => setTarget(e.target.value)}
+                      placeholder="Optional target, gene, or biomarker"
                       className="w-full p-2.5 rounded-lg bg-[#071321] border border-[#1C3648] text-slate-100 text-xs focus:border-teal-400 focus:outline-none"
-                    >
-                      <option>ESR1 — Estrogen receptor alpha (P03372)</option>
-                      <option>mTOR — Mechanistic target of rapamycin (P42345)</option>
-                      <option>AMPK — AMP-activated protein kinase (P54646)</option>
-                      <option>PARP1 — Poly [ADP-ribose] polymerase 1 (P09874)</option>
-                    </select>
+                    />
+                    <datalist id="target-options"><option value="ESR1" /><option value="mTOR" /><option value="AMPK" /><option value="PARP1" /><option value="APP" /><option value="EGFR" /><option value="TNF" /><option value="GLP1R" /></datalist>
                   </div>
 
                   <div>
@@ -213,34 +211,34 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
                   <div className="space-y-2 font-mono">
                     <div className="p-3 rounded-lg bg-[#071321] border border-[#1C3648] flex items-center justify-between">
                       <div>
-                        <div className="text-slate-200 font-bold">Disease: Breast Cancer</div>
-                        <div className="text-[11px] text-slate-400">Aliases: Mammary carcinoma, Breast Neoplasm</div>
+                        <div className="text-slate-200 font-bold">Disease / indication: {disease || 'Not specified'}</div>
+                        <div className="text-[11px] text-slate-400">Entered research scope · entity resolution is not connected in this prototype</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-teal-300 font-semibold">MONDO:0004980</span>
-                        <div className="text-[10px] text-slate-400">Confidence: 99.2%</div>
+                        <span className="text-teal-300 font-semibold">Research scope</span>
+                        <div className="text-[10px] text-slate-400">Identifier not resolved</div>
                       </div>
                     </div>
 
                     <div className="p-3 rounded-lg bg-[#071321] border border-[#1C3648] flex items-center justify-between">
                       <div>
-                        <div className="text-slate-200 font-bold">Target: Estrogen receptor alpha</div>
-                        <div className="text-[11px] text-slate-400">Aliases: ER-alpha, ESR, NR3A1</div>
+                        <div className="text-slate-200 font-bold">Target: {target || 'Not specified'}</div>
+                        <div className="text-[11px] text-slate-400">Researcher-entered target · verify aliases before use</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-cyan-300 font-semibold">UniProt: P03372</span>
-                        <div className="text-[10px] text-slate-400">Gene: ESR1 (HGNC:3467)</div>
+                        <span className="text-cyan-300 font-semibold">Identifier not resolved</span>
+                        <div className="text-[10px] text-slate-400">Candidate gene: {target || '—'}</div>
                       </div>
                     </div>
 
                     <div className="p-3 rounded-lg bg-[#071321] border border-[#1C3648] flex items-center justify-between">
                       <div>
-                        <div className="text-slate-200 font-bold">Compound: Tamoxifen</div>
-                        <div className="text-[11px] text-slate-400">InChIKey: NKANXQFJJICGDU-QPLCGJKRSA-N</div>
+                        <div className="text-slate-200 font-bold">Compound: {compound || 'None (optional)'}</div>
+                        <div className="text-[11px] text-slate-400">Optional researcher-entered reference</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-indigo-300 font-semibold">ChEMBL: CHEMBL83</span>
-                        <div className="text-[10px] text-slate-400">PubChem CID: 2733527</div>
+                        <span className="text-indigo-300 font-semibold">No registry lookup performed</span>
+                        <div className="text-[10px] text-slate-400">Compound identity must be verified</div>
                       </div>
                     </div>
                   </div>
@@ -350,8 +348,8 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
                   <div className="p-3.5 rounded-xl bg-[#06111F] border border-[#1C3648] space-y-2">
                     <div className="font-semibold text-teal-300 text-sm">Execution Summary</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><strong className="text-slate-400">Condition:</strong> Breast Cancer</div>
-                      <div><strong className="text-slate-400">Primary Target:</strong> ESR1 (P03372)</div>
+                      <div><strong className="text-slate-400">Condition:</strong> {disease || 'Not specified'}</div>
+                      <div><strong className="text-slate-400">Primary Target:</strong> {target || 'Not specified'}</div>
                       <div><strong className="text-slate-400">Mode:</strong> Approved Drug Repurposing</div>
                       <div><strong className="text-slate-400">Live Web:</strong> TinyFish Search & Fetch Active</div>
                     </div>
@@ -360,16 +358,15 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
                   <div className="p-3 rounded-lg bg-[#071321] border border-[#1C3648] text-xs space-y-1">
                     <div className="font-semibold text-slate-200">What this run will do:</div>
                     <ul className="list-disc pl-4 space-y-1 text-slate-300">
-                      <li>Query ChEMBL v33 for affinity measurements and known ligands</li>
-                      <li>Extract target–disease genetic associations from Open Targets</li>
-                      <li>Execute scoped TinyFish Search for current trial outcomes and preprints</li>
-                      <li>Run the contradiction challenge engine to flag resistance mutations</li>
-                      <li>Generate a reproducible, source-linked Research Dossier</li>
+                      <li>Use your disease, target and question to scope a research investigation</li>
+                      <li>Search current approved biomedical sources with TinyFish from Evidence Monitor</li>
+                      <li>Fetch selected source pages and review them before classifying findings</li>
+                      <li>Save provenance-linked researcher assessments and export an evidence brief</li>
                     </ul>
                   </div>
 
                   <p className="text-[10px] text-slate-400 italic">
-                    *Computational predictions are hypotheses for research triage, not proof of clinical efficacy or safety.
+                    *This prototype does not run the simulated pipeline stages or resolve entities. Live source search is available in Evidence Monitor; example rankings are illustrative.
                   </p>
                 </div>
               )}
@@ -383,7 +380,7 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
                 <div className="flex items-center gap-2">
                   <RotateCw className={`w-4 h-4 text-teal-400 ${jobState === 'running' ? 'animate-spin' : ''}`} />
                   <span className="font-bold text-slate-100 text-sm">
-                    {jobState === 'running' ? 'Executing Pipeline Stages...' : 'Investigation Completed Successfully'}
+                    {jobState === 'running' ? 'Demonstrating Prototype Workflow...' : 'Prototype Workflow Preview Complete'}
                   </span>
                 </div>
                 <span className="text-xs font-mono text-teal-300">
@@ -391,6 +388,7 @@ export const NewInvestigationWizard: React.FC<NewInvestigationWizardProps> = ({
                 </span>
               </div>
 
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-100">This is a UI walkthrough only. Database retrieval, entity resolution, candidate ranking and dossier generation are not run by this preview.</p>
               {/* Stage List */}
               <div className="space-y-2">
                 {stages.map((stg, idx) => {

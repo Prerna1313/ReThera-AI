@@ -30,7 +30,7 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
   onOpenCompare,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const selectedDisease = 'Breast Cancer (ER+)';
+  const [selectedDisease, setSelectedDisease] = useState('All indications');
   const [selectedTarget, setSelectedTarget] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [onlyContradictions, setOnlyContradictions] = useState(false);
@@ -45,10 +45,11 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
       c.predicted_target.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.chembl_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.smiles.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDisease = selectedDisease === 'All indications' || c.known_indication.toLowerCase().includes(selectedDisease.toLowerCase());
     const matchesContradiction = onlyContradictions ? c.contradiction_flag : true;
     const matchesTarget = selectedTarget === 'All' || c.predicted_target === selectedTarget;
     const matchesStatus = selectedStatus === 'All' || c.clinical_status === selectedStatus;
-    return matchesSearch && matchesContradiction && matchesTarget && matchesStatus;
+    return matchesSearch && matchesDisease && matchesContradiction && matchesTarget && matchesStatus;
   });
 
   const toggleCompare = (id: string) => {
@@ -74,14 +75,14 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
               INVESTIGATION: BRCA-001
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              Snapshot: 2026-10-20 • ChEMBL v33 & Open Targets
+              Illustrative compound set • research across indications
             </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100">
             Drug Repurposing Workbench
           </h1>
           <p className="text-xs text-[#9BB0BF] mt-0.5">
-            Identify and prioritize approved compounds for Breast Cancer (ER+ / ESR1 & PI3K/mTOR pathways)
+            Explore a cross-indication sample library, then investigate any disease or target with live source search.
           </p>
         </div>
 
@@ -132,12 +133,12 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
           <div>
             <select
               value={selectedDisease}
-              disabled
-              aria-label="Disease: prototype includes Breast Cancer ER+ only"
-              title="This prototype includes one breast cancer investigation"
+              onChange={e => setSelectedDisease(e.target.value)}
+              aria-label="Filter by known indication"
               className="w-full p-2 rounded-lg bg-[#071321] border border-[#1C3648] text-xs text-slate-200 focus:outline-none focus:border-teal-400"
             >
-              <option>Breast Cancer (ER+)</option>
+              <option>All indications</option>
+              {[...new Set(candidates.map(c => c.known_indication))].sort().map(indication => <option key={indication} value={indication}>{indication}</option>)}
             </select>
           </div>
 
@@ -148,10 +149,8 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
               onChange={e => setSelectedTarget(e.target.value)}
               className="w-full p-2 rounded-lg bg-[#071321] border border-[#1C3648] text-xs text-slate-200 focus:outline-none focus:border-teal-400"
             >
-              <option value="All">Target: All (ESR1, mTOR, AMPK...)</option>
-              <option value="ESR1">ESR1 (Estrogen receptor alpha)</option>
-              <option value="mTOR">mTOR (Serine/threonine kinase)</option>
-              <option value="AMPK">AMPK (Protein kinase)</option>
+              <option value="All">Target: All</option>
+              {[...new Set(candidates.map(candidate => candidate.predicted_target))].sort().map(target => <option key={target} value={target}>Target: {target}</option>)}
             </select>
           </div>
 
@@ -183,6 +182,7 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
             <button
               onClick={() => {
                 setSearchTerm('');
+                setSelectedDisease('All indications');
                 setOnlyContradictions(false);
                 setSelectedTarget('All');
                 setSelectedStatus('All');
