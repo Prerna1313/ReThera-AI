@@ -46,7 +46,9 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   onNavigate,
 }) => {
   const [activeTab, setActiveTab] = useState<'recent' | 'monitored' | 'library'>('recent');
-  const [selectedRecord, setSelectedRecord] = useState<EvidenceRecord>(evidenceList[0]);
+  const [selectedRecord, setSelectedRecord] = useState<EvidenceRecord>(
+    () => evidenceList.find(record => record.source_provider === 'TinyFish Search & Fetch') || evidenceList[0],
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [tinyfishQuery, setTinyfishQuery] = useState('Tamoxifen ESR1 resistance breast cancer clinical study');
   const [tinyfishConfigured, setTinyfishConfigured] = useState<boolean | null>(null);
@@ -57,6 +59,11 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
   const [liveError, setLiveError] = useState('');
   const [evidenceType, setEvidenceType] = useState<EvidenceCategory>('E0: Unclassified source');
   const [evidenceDirection, setEvidenceDirection] = useState<EvidenceDirection>('unclear');
+  const [briefFinding, setBriefFinding] = useState('');
+  const [briefStudyType, setBriefStudyType] = useState('');
+  const [briefModel, setBriefModel] = useState('');
+  const [briefLimitations, setBriefLimitations] = useState('');
+  const [directionFilter, setDirectionFilter] = useState<EvidenceDirection | 'all' | 'unknown'>('all');
   const [linkedCandidateId, setLinkedCandidateId] = useState(candidates[0]?.id || '');
   const selectedCandidate = candidates.find(candidate => candidate.id === linkedCandidateId);
   const [linkedTarget, setLinkedTarget] = useState(selectedCandidate?.predicted_target || '');
@@ -107,6 +114,10 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       setFetchedPage({ ...result, ...data });
       setEvidenceType('E0: Unclassified source');
       setEvidenceDirection('unclear');
+      setBriefFinding('');
+      setBriefStudyType('');
+      setBriefModel('');
+      setBriefLimitations('');
     } catch (error) {
       setLiveError(error instanceof Error ? error.message : 'The selected page could not be fetched.');
     } finally {
@@ -132,6 +143,12 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
       direction: evidenceDirection,
       review_status: 'Needs Review',
       limitations: 'Page text was retrieved with TinyFish and has not been interpreted or verified by ReThera. Check the original source, study context, dates, and relevance before using it as evidence.',
+      researcher_brief: {
+        finding: briefFinding.trim(),
+        study_type: briefStudyType.trim(),
+        model_population: briefModel.trim(),
+        limitations: briefLimitations.trim(),
+      },
       audit_trail: [
         `TinyFish Search query: ${tinyfishQuery.trim()}`,
         `Selected source: ${fetchedPage.url}`,
@@ -153,13 +170,58 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
     ev.source_provider.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const liveEvidenceCount = evidenceList.filter(record => record.source_provider === 'TinyFish Search & Fetch').length;
+  const liveEvidence = evidenceList.filter(record => record.source_provider === 'TinyFish Search & Fetch');
+  const directionCounts = {
+    supports: liveEvidence.filter(record => record.direction === 'supports').length,
+    contradicts: liveEvidence.filter(record => record.direction === 'contradicts').length,
+    unknown: liveEvidence.filter(record => record.direction === 'unclear' || record.direction === 'contextual').length,
+  };
   const filteredEvidence = matchingEvidence.filter(record =>
     activeTab === 'monitored'
       ? record.source_provider === 'TinyFish Search & Fetch'
       : activeTab === 'library'
         ? record.source_provider !== 'TinyFish Search & Fetch'
         : true
-  );
+  ).filter(record => directionFilter === 'all' || (directionFilter === 'unknown'
+    ? record.direction === 'unclear' || record.direction === 'contextual'
+    : record.direction === directionFilter));
+
+  const downloadEvidenceBrief = () => {
+    const recordedQueries = [...new Set(liveEvidence.flatMap(record => record.audit_trail
+      .filter(entry => entry.startsWith('TinyFish Search query: '))
+      .map(entry => entry.replace('TinyFish Search query: ', ''))))];
+    const formatRecords = (records: EvidenceRecord[]) => records.length ? records.flatMap(record => [
+      `### ${record.title}`,
+      `- Source: ${record.url}`,
+      `- Retrieved: ${record.retrieved_date}`,
+      `- Candidate / target: ${[...record.linked_compounds, ...record.linked_targets].join(' / ') || 'Not linked'}`,
+      `- Review status: ${record.review_status}`,
+      `- Researcher assessment: ${record.direction}`,
+      `- Researcher-entered evidence type: ${record.category}`,
+      `- Study type: ${record.researcher_brief?.study_type || 'Not recorded'}`,
+      `- Model / population: ${record.researcher_brief?.model_population || 'Not recorded'}`,
+      `- Researcher summary: ${record.researcher_brief?.finding || 'Not recorded'}`,
+      `- Limitations: ${record.researcher_brief?.limitations || record.limitations}`,
+      '',
+    ]) : ['- No saved live sources in this category.'];
+    const lines = [
+      '# ReThera AI — Research evidence brief', '',
+      `Research question(s): ${recordedQueries.join('; ') || 'Not recorded on saved live sources'}`,
+      `Exported: ${new Date().toISOString()}`, '',
+      '> Research-support prototype. Evidence directions and summaries are researcher-entered, not automated scientific conclusions. Verify each source.', '',
+      '## Evidence that appears to support', ...formatRecords(liveEvidence.filter(record => record.direction === 'supports')), '',
+      '## Evidence that appears to challenge', ...formatRecords(liveEvidence.filter(record => record.direction === 'contradicts')), '',
+      '## Contextual or unassessed evidence', ...formatRecords(liveEvidence.filter(record => record.direction === 'unclear' || record.direction === 'contextual')), '',
+      '## Coverage note', 'This brief includes only live TinyFish records saved in this browser. An empty section does not mean no evidence exists.',
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = 'rethera-evidence-brief.md';
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -199,7 +261,7 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => { setActiveTab(tab.id as any); setDirectionFilter('all'); }}
                 className={`px-3 py-1.5 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
@@ -214,6 +276,23 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
           <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
             <span>{liveEvidenceCount} TinyFish source record{liveEvidenceCount === 1 ? '' : 's'} saved in this browser</span>
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Live evidence by researcher assessment">
+          {([
+            { key: 'all', label: 'All live evidence', count: liveEvidenceCount, color: 'text-cyan-200' },
+            { key: 'supports', label: 'Appears to support', count: directionCounts.supports, color: 'text-emerald-200' },
+            { key: 'contradicts', label: 'Appears to challenge', count: directionCounts.contradicts, color: 'text-rose-200' },
+            { key: 'unknown', label: 'Context / unknown', count: directionCounts.unknown, color: 'text-amber-200' },
+          ] as const).map(item => (
+            <button key={item.key} type="button" onClick={() => { setActiveTab('monitored'); setDirectionFilter(item.key); }} className={`rounded-lg border px-3 py-2 text-left transition-colors ${directionFilter === item.key ? 'border-cyan-500/40 bg-cyan-500/10' : 'border-[#1C3648] bg-[#071321] hover:bg-[#0A1B2B]'}`}>
+              <span className={`block text-sm font-bold ${item.color}`}>{item.count}</span>
+              <span className="block text-[10px] text-slate-400">{item.label}</span>
+            </button>
+          ))}
+          <button type="button" onClick={downloadEvidenceBrief} disabled={liveEvidenceCount === 0} className="col-span-2 flex items-center justify-center gap-2 rounded-lg border border-teal-500/40 bg-teal-500/10 px-3 py-2 text-xs font-semibold text-teal-100 disabled:opacity-40 sm:col-span-4">
+            <FileText className="h-4 w-4" /> Download source-linked evidence brief (.md)
+          </button>
         </div>
 
         {/* Local filter for already visible evidence records */}
@@ -233,6 +312,18 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
         <div>
           <h2 id="tinyfish-search-title" className="font-semibold text-slate-100">Find a current source with TinyFish</h2>
           <p className="mt-1 text-xs text-slate-400">Search approved biomedical and regulatory sources, choose one result, then fetch and review its original page. Retrieved text is not an AI-verified claim.</p>
+        </div>
+        <div className="rounded-xl border border-[#1C3648] bg-[#071321] p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-200">Evaluation demo · one repeatable research question</span>
+            <button type="button" onClick={() => setTinyfishQuery('Tamoxifen ESR1 resistance breast cancer clinical study')} className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-100">Reset demo question</button>
+          </div>
+          <ol className="mt-2 grid gap-1 text-[11px] text-slate-400 sm:grid-cols-4">
+            <li><span className="text-cyan-300">1.</span> Search literature</li>
+            <li><span className="text-cyan-300">2.</span> Fetch a source</li>
+            <li><span className="text-cyan-300">3.</span> Add a researcher brief</li>
+            <li><span className="text-cyan-300">4.</span> Save and review</li>
+          </ol>
         </div>
         <form onSubmit={handleTinyFishSearch} className="flex flex-col sm:flex-row gap-2">
           <label className="sr-only" htmlFor="tinyfish-query">Biomedical source search</label>
@@ -307,6 +398,28 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
                   <option value="contradicts">Appears to contradict</option>
                   <option value="contextual">Contextual information</option>
                 </select>
+              </label>
+            </div>
+            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-3">
+              <div>
+                <h3 className="text-xs font-semibold text-cyan-100">Researcher-authored evidence brief</h3>
+                <p className="mt-1 text-[10px] text-slate-400">Enter details after inspecting the source. ReThera does not generate or verify this interpretation.</p>
+              </div>
+              <label className="block space-y-1 text-xs text-slate-300">Finding summary
+                <textarea value={briefFinding} onChange={event => setBriefFinding(event.target.value)} maxLength={1200} rows={2} placeholder="What does this source report that matters to the question?" className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100 placeholder:text-slate-500" />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-xs text-slate-300">Study type
+                  <select value={briefStudyType} onChange={event => setBriefStudyType(event.target.value)} className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100">
+                    <option value="">Not assessed</option><option>Cell / in vitro</option><option>Animal / in vivo</option><option>Human observational</option><option>Clinical trial</option><option>Review / meta-analysis</option><option>Other / unclear</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-xs text-slate-300">Model or population
+                  <input value={briefModel} onChange={event => setBriefModel(event.target.value)} maxLength={500} placeholder="e.g. MCF-7 cells; patient cohort details" className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100 placeholder:text-slate-500" />
+                </label>
+              </div>
+              <label className="block space-y-1 text-xs text-slate-300">Limitations / uncertainty
+                <textarea value={briefLimitations} onChange={event => setBriefLimitations(event.target.value)} maxLength={1200} rows={2} placeholder="What should a researcher be cautious about?" className="block w-full rounded-lg border border-[#1C3648] bg-[#06111F] p-2 text-slate-100 placeholder:text-slate-500" />
               </label>
             </div>
             <p className="text-[11px] text-amber-200">Candidate, target, evidence type, and direction are your research annotations; ReThera does not infer them from the page. The source is saved as unreviewed until you confirm it in the evidence drawer.</p>
@@ -418,6 +531,16 @@ export const EvidenceMonitorScreen: React.FC<EvidenceMonitorScreenProps> = ({
               <StatusBadge type="direction" value={selectedRecord.direction} />
               <StatusBadge type="review" value={selectedRecord.review_status} />
             </div>
+
+            {selectedRecord.researcher_brief && (
+              <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-3 space-y-2">
+                <div className="font-bold uppercase tracking-wider text-[9px] text-cyan-200">Researcher-authored brief</div>
+                {selectedRecord.researcher_brief.finding && <p className="text-[11px] text-slate-200"><strong>Finding:</strong> {selectedRecord.researcher_brief.finding}</p>}
+                {selectedRecord.researcher_brief.study_type && <p className="text-[11px] text-slate-300"><strong>Study type:</strong> {selectedRecord.researcher_brief.study_type}</p>}
+                {selectedRecord.researcher_brief.model_population && <p className="text-[11px] text-slate-300"><strong>Model / population:</strong> {selectedRecord.researcher_brief.model_population}</p>}
+                {selectedRecord.researcher_brief.limitations && <p className="text-[11px] text-amber-100"><strong>Limitations:</strong> {selectedRecord.researcher_brief.limitations}</p>}
+              </div>
+            )}
 
             {/* Live records contain source text, not a generated or extracted claim. */}
             <div className={`p-3.5 rounded-xl border leading-relaxed text-[11px] ${

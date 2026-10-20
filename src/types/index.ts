@@ -125,6 +125,12 @@ export interface EvidenceRecord {
   extraction_confidence?: number;
   limitations: string;
   reviewer_notes?: string;
+  researcher_brief?: {
+    finding: string;
+    study_type: string;
+    model_population: string;
+    limitations: string;
+  };
   audit_trail: string[];
 }
 

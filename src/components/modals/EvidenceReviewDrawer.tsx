@@ -81,6 +81,26 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
             <StatusBadge type="review" value={currentStatus} />
           </div>
 
+          {evidence.researcher_brief && (
+            <section className="rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-4 space-y-2">
+              <h3 className="font-semibold text-cyan-100 text-xs">Researcher-authored evidence brief</h3>
+              <p className="text-[10px] text-slate-400">These are reviewer notes, not automated extraction or independent verification.</p>
+              <dl className="space-y-2 text-xs">
+                {[
+                  ['Finding summary', evidence.researcher_brief.finding],
+                  ['Study type', evidence.researcher_brief.study_type],
+                  ['Model / population', evidence.researcher_brief.model_population],
+                  ['Limitations', evidence.researcher_brief.limitations],
+                ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-slate-400">{label}</dt>
+                    <dd className="text-slate-100 leading-relaxed">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
           {/* Metadata Grid */}
           <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#06111F] border border-[#1C3648] font-mono text-[11px]">
             <div>
