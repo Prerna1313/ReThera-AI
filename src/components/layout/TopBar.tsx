@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavigationTab } from '../../types';
+import { NavigationTab, ResearcherProfile } from '../../types';
 import {
   Search,
   Plus,
@@ -15,6 +15,7 @@ import {
 
 interface TopBarProps {
   currentTab: NavigationTab;
+  profile: ResearcherProfile;
   onSelectTab: (tab: NavigationTab) => void;
   onOpenNewInvestigation: () => void;
   onOpenGlobalSearch: () => void;
@@ -27,6 +28,7 @@ interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({
   currentTab,
+  profile,
   onSelectTab,
   onOpenNewInvestigation,
   onOpenGlobalSearch,
@@ -37,6 +39,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenNotifications,
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const initials = profile.displayName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join('') || 'DR';
 
   // Render breadcrumbs based on active tab
   const renderBreadcrumbs = () => {
@@ -227,19 +230,19 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-[#14D9B5] to-[#7C73FF] p-0.5">
               <div className="w-full h-full rounded-full bg-[#06111F] flex items-center justify-center font-bold text-[10px] text-teal-300">
-                SC
+                {initials}
               </div>
               <span className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full bg-emerald-400 ring-1 ring-[#06111F]" />
             </div>
-            <span className="font-medium text-[#E8F3F7] hidden sm:inline">Dr. Sarah Chen</span>
+            <span className="font-medium text-[#E8F3F7] hidden sm:inline">{profile.displayName || 'Researcher'}</span>
           </button>
 
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#0A1B2B] border border-[#1C3648] shadow-elevated-dark p-2 text-xs space-y-1 z-50">
               <div className="px-3 py-2 border-b border-[#1C3648]">
-                <div className="font-semibold text-slate-100">Dr. Sarah Chen, Ph.D.</div>
-                <div className="text-[10px] text-teal-400 font-mono">Lead Bio-Cheminformatics</div>
-                <div className="text-[10px] text-slate-400">sarah.chen@rethera.biotech</div>
+                <div className="font-semibold text-slate-100">{profile.displayName || 'Researcher'}{profile.credentials ? `, ${profile.credentials}` : ''}</div>
+                {profile.role && <div className="text-[10px] text-teal-400 font-mono">{profile.role}</div>}
+                {profile.email && <div className="text-[10px] text-slate-400">{profile.email}</div>}
               </div>
 
               <button

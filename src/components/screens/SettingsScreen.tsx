@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DataSource } from '../../types';
+import { DataSource, ResearcherProfile } from '../../types';
 import {
   Settings,
   Database,
@@ -16,20 +16,25 @@ import {
   Cpu,
   Layers,
   FileText,
+  UserRound,
 } from 'lucide-react';
 
 interface SettingsScreenProps {
   dataSources: DataSource[];
+  profile: ResearcherProfile;
+  onProfileChange: (profile: ResearcherProfile) => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   dataSources,
+  profile,
+  onProfileChange,
   isDarkMode,
   onToggleTheme,
 }) => {
-  const [activeTab, setActiveTab] = useState<'sources' | 'appearance' | 'models' | 'security'>('sources');
+  const [activeTab, setActiveTab] = useState<'profile' | 'sources' | 'appearance' | 'models' | 'security'>('profile');
   const [tinyFishConfigured, setTinyFishConfigured] = useState<boolean | null>(null);
   const [weights, setWeights] = useState({
     bio: 25,
@@ -56,7 +61,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             SYSTEM ARCHITECTURE & OPERATIONS
           </span>
           <span className="text-[11px] text-slate-400 font-mono">
-            Workspace: Demo Translational Lab • User: Dr. Sarah Chen
+            Workspace: {profile.institution || 'Research Workspace'} • User: {profile.displayName || 'Researcher'}
           </span>
         </div>
         <h1 className="text-xl md:text-2xl font-bold text-slate-100">
@@ -69,6 +74,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Settings Navigation Tabs */}
         <div className="flex items-center gap-2 border-t border-[#1C3648] mt-4 pt-3 overflow-x-auto text-xs">
           {[
+            { id: 'profile', label: 'Researcher Profile', icon: <UserRound className="w-3.5 h-3.5" /> },
             { id: 'sources', label: 'Data Sources & Licences (9)', icon: <Database className="w-3.5 h-3.5" /> },
             { id: 'appearance', label: 'Appearance & Theme', icon: <Palette className="w-3.5 h-3.5" /> },
             { id: 'models', label: 'Models & Ranking Weights', icon: <Sliders className="w-3.5 h-3.5" /> },
@@ -89,6 +95,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           ))}
         </div>
       </div>
+
+      {activeTab === 'profile' && (
+        <section className="rounded-2xl border border-[#1C3648] bg-[#0A1B2B] p-5 shadow-sm" aria-labelledby="researcher-profile-heading">
+          <div className="mb-5">
+            <h2 id="researcher-profile-heading" className="flex items-center gap-2 text-sm font-bold text-slate-100"><UserRound className="h-4 w-4 text-teal-300" />Researcher Profile</h2>
+            <p className="mt-1 text-xs text-slate-400">Edit the demo identity shown in the navigation menu. Changes save automatically in this browser.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {([
+              ['displayName', 'Display name', 'e.g. Dr. Alex Morgan'],
+              ['credentials', 'Credentials', 'e.g. Ph.D., MD'],
+              ['role', 'Role / title', 'e.g. Translational Researcher'],
+              ['email', 'Email', 'name@institution.org'],
+              ['institution', 'Workspace / institution', 'e.g. Translational Research Lab'],
+            ] as const).map(([field, label, placeholder]) => (
+              <label key={field} className="space-y-1.5 text-xs font-medium text-slate-300">
+                {label}
+                <input
+                  type={field === 'email' ? 'email' : 'text'}
+                  value={profile[field]}
+                  onChange={event => onProfileChange({ ...profile, [field]: event.target.value })}
+                  maxLength={field === 'email' ? 160 : 100}
+                  placeholder={placeholder}
+                  className="block w-full rounded-lg border border-[#1C3648] bg-[#071321] px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal-400 focus:outline-none"
+                />
+              </label>
+            ))}
+          </div>
+          <p className="mt-4 text-[11px] text-slate-500">This profile is stored locally for the prototype; there is no account or server-side profile yet.</p>
+        </section>
+      )}
 
       {/* TAB 1: Data Sources & Licences */}
       {activeTab === 'sources' && (

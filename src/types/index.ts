@@ -9,6 +9,14 @@ export type NavigationTab =
   | 'discover-preview'
   | 'settings';
 
+export interface ResearcherProfile {
+  displayName: string;
+  credentials: string;
+  role: string;
+  email: string;
+  institution: string;
+}
+
 export type EvidenceCategory = 
   | 'E0: Unclassified source'
   | 'E1: Human / Regulatory'

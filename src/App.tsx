@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationTab, Candidate, EvidenceRecord } from './types';
+import { NavigationTab, Candidate, EvidenceRecord, ResearcherProfile } from './types';
 import {
   mockCandidates,
   mockInvestigations,
@@ -30,6 +30,27 @@ import { GlobalSearchModal } from './components/modals/GlobalSearchModal';
 import { CompareCandidatesModal } from './components/modals/CompareCandidatesModal';
 import { EvidenceReviewDrawer } from './components/modals/EvidenceReviewDrawer';
 
+const DEFAULT_RESEARCHER_PROFILE: ResearcherProfile = {
+  displayName: 'Dr. Sarah Chen',
+  credentials: 'Ph.D.',
+  role: 'Lead Bio-Cheminformatics',
+  email: 'sarah.chen@rethera.biotech',
+  institution: 'Demo Translational Lab',
+};
+
+function loadResearcherProfile(): ResearcherProfile {
+  try {
+    const saved = JSON.parse(localStorage.getItem('rethera-researcher-profile') || 'null');
+    if (saved && typeof saved === 'object') {
+      return Object.fromEntries(Object.keys(DEFAULT_RESEARCHER_PROFILE).map(key => [
+        key,
+        typeof saved[key] === 'string' ? saved[key] : DEFAULT_RESEARCHER_PROFILE[key as keyof ResearcherProfile],
+      ])) as unknown as ResearcherProfile;
+    }
+  } catch { /* Use the editable demo profile defaults when storage is unavailable. */ }
+  return DEFAULT_RESEARCHER_PROFILE;
+}
+
 export const App: React.FC = () => {
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -39,6 +60,7 @@ export const App: React.FC = () => {
 
   // Active navigation tab
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
+  const [researcherProfile, setResearcherProfile] = useState<ResearcherProfile>(loadResearcherProfile);
   
   // Specific view sub-states
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('cand-1');
@@ -80,6 +102,10 @@ export const App: React.FC = () => {
     const liveRecords = evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch');
     localStorage.setItem('rethera-live-evidence', JSON.stringify(liveRecords));
   }, [evidenceRecords]);
+
+  useEffect(() => {
+    localStorage.setItem('rethera-researcher-profile', JSON.stringify(researcherProfile));
+  }, [researcherProfile]);
 
   // Global keyboard shortcuts (Ctrl/Cmd+K for search, ? for help, Esc for modal close)
   useEffect(() => {
@@ -188,6 +214,7 @@ export const App: React.FC = () => {
         <div className="sticky top-0 z-30 h-16 shrink-0">
           <TopBar
             currentTab={currentTab}
+            profile={researcherProfile}
             onSelectTab={handleNavigate}
             onOpenNewInvestigation={() => setIsNewInvestigationOpen(true)}
             onOpenGlobalSearch={() => setIsGlobalSearchOpen(true)}
@@ -302,6 +329,8 @@ export const App: React.FC = () => {
               {currentTab === 'settings' && (
                 <SettingsScreen
                   dataSources={mockDataSources}
+                  profile={researcherProfile}
+                  onProfileChange={setResearcherProfile}
                   isDarkMode={isDarkMode}
                   onToggleTheme={toggleTheme}
                 />
