@@ -117,6 +117,16 @@ export interface Candidate {
 }
 
 export interface EvidenceRecord {
+  provenance?: 'live' | 'sample';
+  investigation_id?: string;
+  research_question?: string;
+  search_query?: string;
+  search_retrieved_at?: string;
+  researcher?: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+  source_context?: Record<string, unknown>;
+  content_truncated?: boolean;
   id: string;
   title: string;
   url: string;
@@ -138,6 +148,7 @@ export interface EvidenceRecord {
     study_type: string;
     model_population: string;
     limitations: string;
+    unknowns?: string;
   };
   audit_trail: string[];
 }
@@ -190,4 +201,14 @@ export interface DataSource {
   last_retrieval: string;
   license_terms: string;
   warnings?: string;
+}
+
+export interface ResearchScope {
+  id: string;
+  question: string;
+  disease: string;
+  target: string;
+  compound: string;
+  query: string;
+  createdAt: string;
 }

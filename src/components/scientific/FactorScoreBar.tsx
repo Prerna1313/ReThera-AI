@@ -21,7 +21,7 @@ export const FactorScoreBar: React.FC<FactorScoreBarProps> = ({ score, factorSco
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
         <span className={`px-2 py-0.5 rounded font-mono font-bold text-xs border ${getScoreColor(score)}`}>
-          {score.toFixed(2)}
+          {score.toFixed(2)} <span className="text-[9px] font-normal">sample</span>
         </span>
         <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div
@@ -34,9 +34,9 @@ export const FactorScoreBar: React.FC<FactorScoreBarProps> = ({ score, factorSco
       {showBreakdown && factorScores && (
         <div className="mt-3 p-3 bg-slate-900/60 dark:bg-[#071321] rounded-lg border border-slate-700/50 dark:border-[#1C3648] text-xs space-y-2">
           <div className="flex items-center justify-between text-slate-400 pb-1 border-b border-slate-800">
-            <span className="font-semibold uppercase tracking-wider text-[10px] text-slate-300">Factor-Level Score Rationale</span>
+            <span className="font-semibold uppercase tracking-wider text-[10px] text-slate-300">Sample factor scores</span>
             <span className="flex items-center gap-1 text-[10px] text-teal-400">
-              <Info className="w-3 h-3" /> Triage Heuristic
+              <Info className="w-3 h-3" /> Illustrative only
             </span>
           </div>
 
@@ -103,7 +103,7 @@ export const FactorScoreBar: React.FC<FactorScoreBarProps> = ({ score, factorSco
           </div>
 
           <p className="text-[10px] text-slate-400/80 pt-1 border-t border-slate-800/80 italic">
-            *Heuristic prioritization score for research triage. Not a clinical probability of success.
+            *Static sample values. No scoring model ran; these are not clinical probabilities.
           </p>
         </div>
       )}

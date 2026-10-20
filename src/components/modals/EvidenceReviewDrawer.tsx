@@ -1,3 +1,5 @@
+import { isLiveEvidence } from '../../data/evidence';
+import { downloadBrief } from '../../data/evidence';
 import React, { useEffect, useState } from 'react';
 import { EvidenceRecord } from '../../types';
 import { StatusBadge } from '../scientific/StatusBadge';
@@ -58,6 +60,18 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
 
         {/* Drawer Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+          <div role="note" className={`rounded-lg border p-3 ${isLiveEvidence(evidence) ? 'border-cyan-500/40 text-cyan-200' : 'border-amber-500/40 text-amber-200'}`}>
+            {isLiveEvidence(evidence) ? 'Live retrieved source · researcher annotations. Confirming the source does not validate a biological relationship.' : 'Illustrative sample record · claims and review history are demo data.'}
+          </div>
+          {isLiveEvidence(evidence) && <section className="space-y-2 rounded-lg border border-cyan-500/30 p-3">
+            <p><strong>Research question:</strong> {evidence.research_question || 'Not recorded (legacy record)'}</p>
+            <p><strong>What remains unknown:</strong> {evidence.researcher_brief?.unknowns || 'Not recorded'}</p>
+            <p><strong>Assessment:</strong> {evidence.direction} · {evidence.review_status}</p>
+            <p><strong>Researcher:</strong> {evidence.researcher || 'Not recorded'} · Reviewed: {evidence.reviewed_by || 'Pending'} / {evidence.reviewed_at || 'Pending'}</p>
+            <p>{evidence.content_truncated ? 'Fetched material truncated at 30,000 characters. Read the original for the remainder.' : 'Provider-returned material; may not include full publication text.'}</p>
+            <details><summary>Source record context</summary><pre className="max-h-64 overflow-auto whitespace-pre-wrap">{JSON.stringify(evidence.source_context || {}, null, 2)}</pre></details>
+            <button onClick={() => downloadBrief([evidence], evidence.research_question)} className="rounded border border-teal-500/40 p-2 font-semibold text-teal-200">Download this source’s evidence brief</button>
+          </section>}
           {/* Title & External Link */}
           <div>
             <h3 className="font-bold text-sm text-slate-100 leading-snug mb-1">
@@ -116,15 +130,15 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
               <div className="text-teal-300 font-medium">{evidence.retrieved_date}</div>
             </div>
             <div>
-              <div className="text-slate-400 text-[10px] uppercase">{evidence.source_provider === 'TinyFish Search & Fetch' ? 'Scientific extraction' : 'Demo extraction confidence'}</div>
-              <div className="text-cyan-300 font-medium">{evidence.source_provider === 'TinyFish Search & Fetch' || evidence.extraction_confidence == null ? 'Not performed' : 'Illustrative only'}</div>
+              <div className="text-slate-400 text-[10px] uppercase">{isLiveEvidence(evidence) ? 'Scientific extraction' : 'Demo extraction confidence'}</div>
+              <div className="text-cyan-300 font-medium">{isLiveEvidence(evidence) || evidence.extraction_confidence == null ? 'Not performed' : 'Illustrative only'}</div>
             </div>
           </div>
 
           {/* Extracted Claim Text */}
           <div className="space-y-1.5">
             <label className="font-semibold text-slate-300 text-[11px] uppercase tracking-wider">
-              {evidence.source_provider === 'TinyFish Search & Fetch' ? 'Fetched source text · not AI-interpreted' : 'Illustrative demo claim'}
+              {isLiveEvidence(evidence) ? 'Fetched source text · not AI-interpreted' : 'Illustrative demo claim'}
             </label>
             <div className={`p-4 rounded-xl border leading-relaxed text-slate-100 text-xs ${
               evidence.direction === 'contradicts'
@@ -135,16 +149,16 @@ export const EvidenceReviewDrawer: React.FC<EvidenceReviewDrawerProps> = ({
             </div>
           </div>
 
-          {evidence.source_provider === 'TinyFish Search & Fetch' && (
+          {isLiveEvidence(evidence) && (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-200">
-              TinyFish retrieved the page text. ReThera has not independently verified the source or interpreted its scientific meaning. Review the original page before confirming this record.
+              The provider retrieved the source material. ReThera has not independently verified the source or interpreted its scientific meaning. Review the original page before confirming this record.
             </div>
           )}
 
-          {/* Linked Ontology Entities */}
+          {/* Researcher-entered entity links */}
           <div className="space-y-1.5">
             <label className="font-semibold text-slate-300 text-[11px] uppercase tracking-wider">
-              Linked Ontology Entities
+              Researcher-entered entity links
             </label>
             <div className="flex flex-wrap gap-2 font-mono text-[11px]">
               {evidence.linked_compounds.map(c => (

@@ -1,3 +1,4 @@
+import { isLiveEvidence } from '../../data/evidence';
 import React, { useState } from 'react';
 import { Candidate, EvidenceRecord, NavigationTab } from '../../types';
 import { EvidenceBreakdownChart } from '../scientific/EvidenceBreakdownChart';
@@ -45,7 +46,7 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
         'Illustrative candidate', candidate.name, `${candidate.chembl_id}; ${candidate.pubchem_cid}`,
         candidate.priority_score, 'Static sample score', 'Not scientifically validated', '', candidate.rationale,
       ]),
-      ...evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').map(record => [
+      ...evidenceRecords.filter(record => isLiveEvidence(record) && record.linked_diseases.some(disease => /breast|brca/i.test(disease))).map(record => [
         'TinyFish source record', record.title, record.url, record.direction, record.category,
         record.review_status, record.claim, `Retrieved ${record.retrieved_date}. ${record.limitations} ${record.reviewer_notes || ''}`,
       ]),
@@ -73,7 +74,7 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
       {/* Top Dossier Header Card */}
       <div className="p-6 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-elevated-dark space-y-4">
         <div role="note" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
-          Example dossier generated from static prototype records. Candidate scores, example evidence claims, and citations have not been verified. Live TinyFish source records appear below and do not change this sample ranking.
+          Example dossier generated from static prototype records. Candidate scores, example evidence claims, and citations have not been verified. Live source records appear below and do not change this sample ranking.
         </div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -244,7 +245,7 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
             <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
               <span className="font-bold text-slate-100">ChEMBL83_ACT102 (ESR1 Ligand Binding Domain)</span>
               <p className="text-[11px] text-slate-300 mt-0.5">
-                Direct measured Kd = 1.2 nM, IC50 = 15 nM in human MCF-7 assay. Competitive inhibition of 17β-estradiol validated.
+                Illustrative assay values: Kd = 1.2 nM, IC50 = 15 nM in MCF-7 cells. These fixture claims have not been validated by this application.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-[#071321] border border-[#1C3648]">
@@ -300,10 +301,10 @@ export const ResearchDossierScreen: React.FC<ResearchDossierScreenProps> = ({
             TinyFish retrieval is on demand in Evidence Monitor. Choose a search result, fetch its page, inspect the returned text, and save it for source review. Retrieved evidence does not automatically alter the scores or content in this static example dossier.
           </p>
           <div className="space-y-3 pt-2">
-            <h3 className="font-semibold text-slate-200">Saved TinyFish source records ({evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').length})</h3>
-            {evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').length === 0 ? (
+            <h3 className="font-semibold text-slate-200">Researcher-linked breast-cancer sources ({evidenceRecords.filter(record => isLiveEvidence(record) && record.linked_diseases.some(disease => /breast|brca/i.test(disease))).length})</h3>
+            {evidenceRecords.filter(record => isLiveEvidence(record) && record.linked_diseases.some(disease => /breast|brca/i.test(disease))).length === 0 ? (
               <p className="text-slate-400">No live source has been saved yet. Run a Search and Fetch in Evidence Monitor to add one here.</p>
-            ) : evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').map(record => (
+            ) : evidenceRecords.filter(record => isLiveEvidence(record) && record.linked_diseases.some(disease => /breast|brca/i.test(disease))).map(record => (
               <article key={record.id} className="rounded-lg border border-[#1C3648] bg-[#071321] p-3 space-y-2">
                 <a className="font-semibold text-cyan-300 hover:underline" href={record.url} target="_blank" rel="noreferrer">{record.title} ↗</a>
                 <div className="flex flex-wrap gap-2">

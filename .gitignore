@@ -8,3 +8,5 @@ dist/
 .DS_Store
 Thumbs.db
 docs/rethera_ai_product_technical_proposal.docx
+
+.npm-cache/

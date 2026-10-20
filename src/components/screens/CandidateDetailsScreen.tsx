@@ -1,3 +1,4 @@
+import { isLiveEvidence } from '../../data/evidence';
 import React, { useState } from 'react';
 import { Candidate, NavigationTab, EvidenceRecord } from '../../types';
 import { MoleculeViewer } from '../scientific/MoleculeViewer';
@@ -37,7 +38,7 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'targets' | 'evidence' | 'trials' | 'properties' | 'related'>('overview');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const linkedLiveEvidence = evidenceRecords.filter(record =>
-    record.source_provider === 'TinyFish Search & Fetch' &&
+    isLiveEvidence(record) &&
     record.linked_compounds.some(name => name.toLowerCase() === candidate.name.toLowerCase())
   );
 
@@ -403,7 +404,7 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1C3648] pb-3">
             <div>
               <h2 id="live-linked-evidence-title" className="font-bold text-slate-100">Live sources linked by the researcher</h2>
-              <p className="mt-1 text-xs text-slate-400">Fetched with TinyFish. These records do not affect the sample priority score and require source review.</p>
+              <p className="mt-1 text-xs text-slate-400">Live retrieved source. These records do not affect the sample priority score and require source review.</p>
             </div>
             <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-200">{linkedLiveEvidence.length} saved</span>
           </div>

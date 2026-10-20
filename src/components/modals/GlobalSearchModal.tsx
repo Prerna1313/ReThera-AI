@@ -36,7 +36,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       ],
     },
     {
-      category: 'Live TinyFish Evidence',
+      category: 'Sample evidence records',
       icon: <Radio className="w-3.5 h-3.5 text-rose-400" />,
       items: [
         { title: 'ESR1 Y537S activating resistance mutation', subtitle: 'Nature Medicine 2026 • 28.4% endocrine resistant cohort', tab: 'evidence-monitor' as NavigationTab },
@@ -66,7 +66,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             autoFocus
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search across diseases, targets, compounds, SMILES, or trials..."
+            placeholder="Search sample records (use New Investigation for live sources)..."
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
           />
           {query && (

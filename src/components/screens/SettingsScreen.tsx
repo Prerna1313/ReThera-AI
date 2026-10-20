@@ -161,7 +161,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <span className="font-bold text-sm text-slate-100">
                 Reference Sources · Demo Listings
               </span>
-              <span className="text-[10px] text-amber-300 font-mono">Adapters are not connected</span>
+              <span className="text-[10px] text-amber-300 font-mono">Sample listings · ClinicalTrials.gov API available in Evidence Monitor</span>
             </div>
 
             <div className="divide-y divide-[#1C3648]/60 text-xs">
@@ -202,7 +202,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           {/* Licensing Gate Notice */}
           <div className="p-4 rounded-xl bg-slate-900/60 dark:bg-[#071321] border border-[#1C3648] text-[11px] text-[#8293A5] space-y-1 leading-relaxed">
             <strong className="text-slate-300 block">Source and licensing note:</strong>
-            These source listings are examples. Confirm the licence and reuse terms for each upstream dataset before redistributing data. Live TinyFish requests send your search query and the URL you choose to the TinyFish API.
+            These source listings are examples. ClinicalTrials.gov API v2 is available on demand in Evidence Monitor. Confirm the licence and reuse terms for each upstream dataset before redistributing data. Live TinyFish requests send your search query and the URL you choose to the TinyFish API.
           </div>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { isLiveEvidence } from '../../data/evidence';
 import React, { useMemo, useRef, useState } from 'react';
 import { EvidenceRecord, GraphNode, GraphEdge } from '../../types';
 import { ZoomIn, ZoomOut, Maximize2, RotateCcw, ArrowUpRight } from 'lucide-react';
@@ -68,7 +69,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({ node
   const nodeById = useMemo(() => new Map(nodes.map(node => [node.id, node])), [nodes]);
   const selectedSources = selectedEdge?.evidence_ids
     .map(id => evidenceRecords.find(record => record.id === id))
-    .filter((record): record is EvidenceRecord => Boolean(record)) || [];
+    .filter((record): record is EvidenceRecord => Boolean(record && isLiveEvidence(record) && selectedEdge?.id.startsWith('edge-live-'))) || [];
 
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
     if ((event.target as Element).closest('[data-graph-item="true"]')) return;
@@ -100,7 +101,7 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({ node
           const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
           return <g key={edge.id} data-graph-item="true" className="cursor-pointer" onPointerEnter={() => setHoveredEdge(edge.id)} onPointerLeave={() => setHoveredEdge(null)} onClick={event => { event.stopPropagation(); setSelectedEdge(edge); }}>
             <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth="18" />
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={active ? '#14D9B5' : '#467182'} strokeOpacity={active ? 0.95 : 0.56} strokeWidth={active ? 2.6 : 1.4} />
+            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={active ? '#14D9B5' : '#467182'} strokeOpacity={active ? 0.95 : 0.56} strokeDasharray={edge.id.startsWith('edge-live-') ? '6 4' : undefined} strokeWidth={active ? 2.6 : 1.4} />
             {active && <g><rect x={midX - Math.min(82, edge.label.length * 3.2 + 10)} y={midY - 10} width={Math.min(164, edge.label.length * 6.4 + 20)} height="20" rx="8" fill="#071321" stroke="#14D9B5" /><text x={midX} y={midY + 3.5} fill="#b9f8e9" textAnchor="middle" fontSize="9">{edge.label}</text></g>}
           </g>;
         })}
@@ -125,15 +126,15 @@ export const KnowledgeGraphCanvas: React.FC<KnowledgeGraphCanvasProps> = ({ node
       <button type="button" onClick={reset} title="Reset graph" className="rounded p-1.5 text-slate-300 hover:bg-[#0D2233] hover:text-teal-300"><RotateCcw className="h-4 w-4" /></button>
     </div>
     {selectedEdge && <aside className="absolute right-4 top-4 z-20 w-80 rounded-xl border border-teal-500/40 bg-[#0A1B2B]/95 p-4 text-xs shadow-xl">
-      <div className="flex items-start justify-between gap-3"><div><span className="text-[10px] font-semibold uppercase tracking-wider text-teal-300">{selectedSources.length ? 'Researcher-linked source' : 'Sample relationship'}</span><h3 className="mt-1 font-semibold text-slate-100">{nodeById.get(selectedEdge.source)?.label || selectedEdge.source} → {nodeById.get(selectedEdge.target)?.label || selectedEdge.target}</h3></div><button type="button" aria-label="Close relationship details" onClick={() => setSelectedEdge(null)} className="text-slate-400 hover:text-white">×</button></div>
+      <div className="flex items-start justify-between gap-3"><div><span className="text-[10px] font-semibold uppercase tracking-wider text-teal-300">{selectedSources.length ? 'Live source annotation' : 'Sample relationship'}</span><h3 className="mt-1 font-semibold text-slate-100">{nodeById.get(selectedEdge.source)?.label || selectedEdge.source} → {nodeById.get(selectedEdge.target)?.label || selectedEdge.target}</h3></div><button type="button" aria-label="Close relationship details" onClick={() => setSelectedEdge(null)} className="text-slate-400 hover:text-white">×</button></div>
       <p className="mt-2 text-cyan-300">{selectedEdge.label}{selectedEdge.confidence > 0 ? ` · illustrative confidence ${(selectedEdge.confidence * 100).toFixed(0)}%` : ''}</p>
       {selectedSources.length ? <div className="mt-3 space-y-2">{selectedSources.map(source => <article key={source.id} className="rounded border border-cyan-500/30 bg-[#06111F] p-2.5">
         <a href={source.url} target="_blank" rel="noreferrer" className="text-[11px] font-semibold leading-snug text-cyan-200 hover:underline">{source.title}</a>
         <div className="mt-1 text-[9px] text-slate-400">{source.source_provider} · Retrieved {source.retrieved_date}</div>
         <div className="mt-1 text-[10px] text-slate-300">Researcher assessment: {source.direction} · {source.review_status}</div>
         {source.researcher_brief?.finding && <p className="mt-2 border-l-2 border-teal-500/50 pl-2 text-[10px] leading-relaxed text-slate-300">{source.researcher_brief.finding}</p>}
-        <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[9px] text-amber-200">Link and assessment are researcher-entered.</span>{onOpenEvidenceRecord && <button type="button" onClick={() => onOpenEvidenceRecord(source.id)} className="shrink-0 text-[10px] font-semibold text-teal-300 hover:text-white">Open review</button>}</div>
-      </article>)}</div> : <p className="mt-2 rounded border border-[#1C3648] bg-[#06111F] p-2.5 leading-relaxed text-slate-300">This demo relationship has no attached source in the graph. Check primary literature or curated records before relying on it.</p>}
+        <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[9px] text-amber-200">Researcher-entered link; does not validate a biological relationship.</span>{onOpenEvidenceRecord && <button type="button" onClick={() => onOpenEvidenceRecord(source.id)} className="shrink-0 text-[10px] font-semibold text-teal-300 hover:text-white">Open review</button>}</div>
+      </article>)}</div> : <p className="mt-2 rounded border border-[#1C3648] bg-[#06111F] p-2.5 leading-relaxed text-slate-300">Sample biological relationship. Source URLs in fixtures do not validate this relationship. Check primary literature or curated records before relying on it.</p>}
       {(() => { const compound = [selectedEdge.source, selectedEdge.target].map(id => nodeById.get(id)).find(node => node?.type === 'compound'); const candidateId = compound?.id.replace('node-drug-', ''); return candidateId && onNavigateToCandidate ? <button type="button" onClick={() => onNavigateToCandidate(candidateId)} className="mt-3 inline-flex items-center gap-1 text-teal-300 hover:text-teal-100">Inspect linked compound <ArrowUpRight className="h-3 w-3" /></button> : null; })()}
     </aside>}
     <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-[#1C3648] bg-[#071321]/90 px-4 py-2 text-[10px] text-slate-300">

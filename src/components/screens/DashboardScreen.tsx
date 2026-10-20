@@ -137,7 +137,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-teal-400 group-hover:translate-x-1 transition-all" />
             </h3>
             <p className="text-[11px] text-[#9BB0BF] leading-relaxed">
-              Find new uses for existing drugs and compounds with explainable 6-factor triage ranking.
+              Explore sample candidates and illustrative six-factor scores.
             </p>
           </div>
 
@@ -154,11 +154,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
             </h3>
             <p className="text-[11px] text-[#9BB0BF] leading-relaxed">
-              Explore 13+ biomedical datasets linking diseases, genes, proteins, pathways, and trials.
+              Inspect sample biological relationships and distinct researcher-linked live sources.
             </p>
           </div>
 
-          {/* Card 3: In-Silico Testing / Compound Analysis */}
+          {/* Card 3: Sample Compound Data / Compound Analysis */}
           <div
             onClick={() => onNavigate('compounds')}
             className="p-4 rounded-xl bg-[#0A1B2B] hover:bg-[#0D2233] border border-[#1C3648] hover:border-indigo-500/50 cursor-pointer transition-all group shadow-sm"
@@ -167,11 +167,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <Cpu className="w-5 h-5" />
             </div>
             <h3 className="font-bold text-sm text-slate-100 group-hover:text-indigo-300 mb-1 flex items-center justify-between">
-              In-Silico Testing
+              Sample Compound Data
               <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
             </h3>
             <p className="text-[11px] text-[#9BB0BF] leading-relaxed">
-              Inspect bioactivity measurements, predict binding affinity, ADMET safety & similarity.
+              Inspect illustrative bioactivity and ADMET fields; predictions are not connected.
             </p>
           </div>
 
@@ -203,9 +203,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <div className="p-5 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-[#1C3648] mb-3">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-slate-100">Recent Investigations</span>
+                <span className="font-bold text-sm text-slate-100">Sample Investigations</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
-                  {investigations.length} Active Studies
+                  {investigations.length} Sample Studies
                 </span>
               </div>
               <button

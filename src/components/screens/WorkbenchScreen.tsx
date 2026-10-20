@@ -232,7 +232,7 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
                 <th className="py-3 px-3">Compound & Identity</th>
                 <th className="py-3 px-3">Known Indication</th>
                 <th className="py-3 px-3">Predicted Target</th>
-                <th className="py-3 px-4 w-44">Evidence Priority Score</th>
+                <th className="py-3 px-4 w-44">Sample Priority Score</th>
                 <th className="py-3 px-3">Clinical Status</th>
                 <th className="py-3 px-3">Contradiction Flags</th>
                 <th className="py-3 px-3 text-right">Actions</th>
@@ -296,7 +296,7 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
                         </span>
                       </td>
 
-                      {/* Evidence Priority Score */}
+                      {/* Sample Priority Score */}
                       <td
                         className="py-3 px-4"
                         onClick={e => {
@@ -363,7 +363,7 @@ export const WorkbenchScreen: React.FC<WorkbenchScreenProps> = ({
         {/* Heuristic Notice Footnote */}
         <div className="p-3 bg-[#071321] border-t border-[#1C3648] text-[11px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <span>
-            *Priority score represents an automated research-triage heuristic. It is not an experimental binding proof or clinical probability of success.
+            *Priority scores are static illustrative values; no scoring model ran. It is not an experimental binding proof or clinical probability of success.
           </span>
           <button
             onClick={() => onNavigate('reports')}

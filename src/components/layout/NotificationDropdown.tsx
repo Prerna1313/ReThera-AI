@@ -28,7 +28,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     {
       id: 'notif-2',
       title: 'Contradictory Evidence Flagged',
-      desc: 'TinyFish detected ESR1 Y537S activating resistance mutation for Tamoxifen in Nature Medicine.',
+      desc: 'Illustrative contradiction scenario: ESR1 Y537S activating resistance mutation for Tamoxifen in Nature Medicine.',
       time: '2 hours ago',
       type: 'danger',
       icon: <AlertCircle className="w-4 h-4 text-rose-400" />,
@@ -37,7 +37,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     {
       id: 'notif-3',
       title: 'Live Web Source Discovered',
-      desc: 'TinyFish Search retrieved 10-year ATLAS trial update from Lancet Oncology.',
+      desc: 'Illustrative retrieval scenario: 10-year ATLAS trial update from Lancet Oncology.',
       time: 'Yesterday',
       type: 'live',
       icon: <Radio className="w-4 h-4 text-cyan-400" />,
@@ -76,9 +76,9 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     <div className="fixed top-16 right-4 sm:right-10 z-50 w-88 max-w-sm rounded-xl bg-[#0A1B2B] border border-[#1C3648] shadow-elevated-dark p-3 text-xs">
       <div className="flex items-center justify-between pb-2 border-b border-[#1C3648] mb-2">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-100 text-sm">Notifications & Alerts</span>
+          <span className="font-semibold text-slate-100 text-sm">Sample notifications</span>
           <span className="px-1.5 py-0.5 rounded-full bg-teal-500/15 text-teal-400 text-[10px] font-mono">
-            6 Unread
+            6 examples
           </span>
         </div>
         <button
@@ -102,7 +102,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 font-semibold text-slate-200">
                 {n.icon}
-                <span>{n.title}</span>
+                <span>Sample: {n.title}</span>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">{n.time}</span>
             </div>

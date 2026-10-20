@@ -1,3 +1,4 @@
+import { isLiveEvidence } from '../../data/evidence';
 import React, { useMemo, useState } from 'react';
 import { EvidenceRecord, GraphNode, GraphEdge, NavigationTab } from '../../types';
 import { KnowledgeGraphCanvas } from '../scientific/KnowledgeGraphCanvas';
@@ -40,7 +41,7 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
     const combinedEdges = [...edges];
     const liveEdges: GraphEdge[] = [];
     const entityNodes = new Map<string, GraphNode>();
-    const liveRecords = evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch');
+    const liveRecords = evidenceRecords.filter(record => isLiveEvidence(record));
     const palette = {
       compound: { color: '#14D9B5', border: '#54FCD6' },
       target: { color: '#0284C7', border: '#38BDF8' },
@@ -113,7 +114,7 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
     return matchesFilter && matchesSearch;
   });
   const liveRecordsForSelectedNode = evidenceRecords.filter(record =>
-    record.source_provider === 'TinyFish Search & Fetch' && liveEvidenceEdges.some(edge =>
+    isLiveEvidence(record) && liveEvidenceEdges.some(edge =>
       (edge.source === selectedNode.id || edge.target === selectedNode.id) && edge.evidence_ids.includes(record.id),
     ),
   );
@@ -128,14 +129,14 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
               INTERACTOME CANVAS
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              {filteredNodes.length} Nodes • {graphEdges.filter(edge => filteredNodes.some(node => node.id === edge.source) && filteredNodes.some(node => node.id === edge.target)).length} Relationships • {evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch').length} Live Sources
+              {filteredNodes.length} Nodes • {graphEdges.filter(edge => filteredNodes.some(node => node.id === edge.source) && filteredNodes.some(node => node.id === edge.target)).length} Relationships • {evidenceRecords.filter(record => isLiveEvidence(record)).length} Live Sources
             </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100">
             Biomedical Knowledge Graph Explorer
           </h1>
           <p className="text-xs text-[#9BB0BF] mt-0.5">
-            Live source links come from researcher-entered entity associations; sample relationships remain illustrative.
+            Live source links come from researcher-entered entity associations; sample relationships remain illustrative. Dashed edges are live source annotations and do not validate biological relationships.
           </p>
         </div>
 
@@ -301,7 +302,7 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
 
             {/* Illustrative Dataset Disclaimer */}
             <div className="p-3 rounded-lg bg-[#06111F] border border-slate-800 text-[10px] text-slate-400 leading-tight">
-              Illustrative graph fixture. Relationship labels and confidence values are demo metadata; source-level evidence is not attached or verified here.
+              Solid relationships and confidence values are sample data. Dashed live source links are researcher annotations, not validated biological relationships.
             </div>
           </div>
         </div>

@@ -25,7 +25,7 @@ export const CompareCandidatesModal: React.FC<CompareCandidatesModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#1C3648] bg-[#071321]">
           <div>
-            <h2 className="font-bold text-base text-white">Compare Repurposing Candidates</h2>
+            <h2 className="font-bold text-base text-white">Compare Sample Candidates</h2>
             <p className="text-[11px] text-[#9BB0BF]">
               Side-by-side multi-factor triage comparison and ADMET profiling
             </p>

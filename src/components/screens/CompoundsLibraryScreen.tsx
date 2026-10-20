@@ -47,17 +47,17 @@ export const CompoundsLibraryScreen: React.FC<CompoundsLibraryScreenProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2 py-0.5 rounded bg-teal-500/15 text-teal-300 font-mono text-[10px] border border-teal-500/30">
-              CHEMICAL ENTITY REGISTRY
+              SAMPLE COMPOUND LIBRARY
             </span>
             <span className="text-[11px] text-slate-400 font-mono">
-              1,248 Indexed Bioactive Structures • ChEMBL v33 & PubChem
+              Illustrative candidates · not a live indexed registry
             </span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-100">
             Biomedical Compounds Library
           </h1>
           <p className="text-xs text-[#9BB0BF] mt-0.5">
-            Searchable repository of canonical small-molecule structures, targets, and measured bioactivities
+            Sample candidate metadata; targets, scores and bioactivities have not been validated
           </p>
         </div>
 
@@ -77,10 +77,10 @@ export const CompoundsLibraryScreen: React.FC<CompoundsLibraryScreenProps> = ({
         {/* Preset Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto text-xs">
           {[
-            { id: 'all', label: 'All Compounds (1,248)' },
-            { id: 'saved', label: 'Saved (42)' },
-            { id: 'recent', label: 'Recently Viewed (18)' },
-            { id: 'watchlist', label: 'Watchlist (12)' },
+            { id: 'all', label: 'All sample compounds' },
+            { id: 'saved', label: 'Saved (sample)' },
+            { id: 'recent', label: 'Recently viewed (sample)' },
+            { id: 'watchlist', label: 'Watchlist (sample)' },
           ].map(p => (
             <button
               key={p.id}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationTab, Candidate, EvidenceRecord, ResearcherProfile } from './types';
+import { NavigationTab, Candidate, EvidenceRecord, ResearcherProfile, ResearchScope } from './types';
 import {
   mockCandidates,
   mockInvestigations,
@@ -9,6 +9,7 @@ import {
   mockEvidenceRecords,
 } from './data/mockData';
 
+import { isLiveEvidence } from './data/evidence';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { HelpModal } from './components/layout/HelpModal';
@@ -62,6 +63,12 @@ export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
   const [researcherProfile, setResearcherProfile] = useState<ResearcherProfile>(loadResearcherProfile);
   
+  const [researchScope, setResearchScope] = useState<ResearchScope | null>(() => {
+    try { return JSON.parse(localStorage.getItem('rethera-active-investigation') || 'null'); }
+    catch { return null; }
+  });
+  useEffect(() => { localStorage.setItem('rethera-active-investigation', JSON.stringify(researchScope)); }, [researchScope]);
+
   // Specific view sub-states
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('cand-1');
   const [viewingDossier, setViewingDossier] = useState<boolean>(false);
@@ -81,6 +88,7 @@ export const App: React.FC = () => {
       return mockEvidenceRecords;
     }
   });
+  const [storageError, setStorageError] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -99,8 +107,13 @@ export const App: React.FC = () => {
   }, [isDarkMode]);
 
   useEffect(() => {
-    const liveRecords = evidenceRecords.filter(record => record.source_provider === 'TinyFish Search & Fetch');
-    localStorage.setItem('rethera-live-evidence', JSON.stringify(liveRecords));
+    const liveRecords = evidenceRecords.filter(isLiveEvidence);
+    try {
+      localStorage.setItem('rethera-live-evidence', JSON.stringify(liveRecords));
+      setStorageError('');
+    } catch {
+      setStorageError('Browser storage is full or unavailable. Your latest evidence is only in memory; download its brief before closing this page.');
+    }
   }, [evidenceRecords]);
 
   useEffect(() => {
@@ -173,16 +186,17 @@ export const App: React.FC = () => {
 
   const handleUpdateEvidence = (evidenceId: string, status: EvidenceRecord['review_status'], notes: string) => {
     setEvidenceRecords(current => current.map(record => record.id === evidenceId
-      ? { ...record, review_status: status, reviewer_notes: notes, audit_trail: [...record.audit_trail, `Researcher review: ${status}`, ...(notes ? [`Reviewer note: ${notes}`] : [])] }
+      ? { ...record, review_status: status, reviewer_notes: notes, reviewed_at: new Date().toISOString(), reviewed_by: researcherProfile.displayName, audit_trail: [...record.audit_trail, `Researcher review by ${researcherProfile.displayName} at ${new Date().toISOString()}: ${status}`, ...(notes ? [`Reviewer note: ${notes}`] : [])] }
       : record));
     setActiveEvidenceRecord(current => current?.id === evidenceId
-      ? { ...current, review_status: status, reviewer_notes: notes, audit_trail: [...current.audit_trail, `Researcher review: ${status}`, ...(notes ? [`Reviewer note: ${notes}`] : [])] }
+      ? { ...current, review_status: status, reviewer_notes: notes, reviewed_at: new Date().toISOString(), reviewed_by: researcherProfile.displayName, audit_trail: [...current.audit_trail, `Researcher review by ${researcherProfile.displayName} at ${new Date().toISOString()}: ${status}`, ...(notes ? [`Reviewer note: ${notes}`] : [])] }
       : current);
   };
 
-  const handleRunInvestigationComplete = () => {
+  const handleRunInvestigationComplete = (scope: ResearchScope) => {
+    setResearchScope(scope);
     setIsNewInvestigationOpen(false);
-    setCurrentTab('repurposing');
+    setCurrentTab('evidence-monitor');
     setViewingDossier(false);
   };
 
@@ -239,8 +253,9 @@ export const App: React.FC = () => {
         {/* View Content Body */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
           <div role="note" className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-200">
-            <strong>Research prototype · sample analysis.</strong> Candidate scores, citations and molecular illustrations are demo data and are not scientifically validated. The Evidence Monitor can retrieve live sources through TinyFish when its server key is configured; retrieved pages remain unreviewed until a researcher checks them.
+            <strong>Research prototype · sample analysis.</strong> Candidate scores, citations and molecular illustrations are demo data and are not scientifically validated. Evidence Monitor retrieves live TinyFish sources with a server key and structured ClinicalTrials.gov records without a key; retrieved pages remain unreviewed until a researcher checks them.
           </div>
+          {storageError && <div role="alert" className="mb-4 rounded-lg border border-amber-500/40 p-3 text-sm text-amber-200">{storageError}</div>}
           {viewingDossier ? (
             <div>
               <div className="mb-4">
@@ -306,18 +321,22 @@ export const App: React.FC = () => {
                 />
               )}
 
-              {currentTab === 'evidence-monitor' && (
-                <EvidenceMonitorScreen
+              {(
+                <div hidden={currentTab !== 'evidence-monitor'}><EvidenceMonitorScreen
+                  scope={researchScope}
+                  researcherName={researcherProfile.displayName}
                   candidates={mockCandidates}
                   evidenceList={evidenceRecords}
                   onOpenEvidenceDrawer={handleOpenEvidenceReview}
                   onAddEvidence={handleAddEvidence}
                   onNavigate={handleNavigate}
-                />
+                /></div>
               )}
 
               {currentTab === 'reports' && (
                 <ReportsLibraryScreen
+                  evidenceRecords={evidenceRecords}
+                  onOpenEvidenceDrawer={handleOpenEvidenceReview}
                   investigations={mockInvestigations}
                   onOpenReport={handleOpenReport}
                   onNavigate={handleNavigate}

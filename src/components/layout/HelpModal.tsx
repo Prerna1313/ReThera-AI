@@ -39,7 +39,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <p className="text-slate-400">This is a proposed interpretation of the brand name, rather than an official acronym established by the technical proposal.</p>
             <p className="text-slate-300"><strong>Mission:</strong> Turn fragmented biomedical knowledge into traceable drug-repurposing hypotheses.</p>
             <p className="text-slate-300"><strong>Vision:</strong> Help researchers investigate promising therapeutic possibilities more efficiently, transparently, and systematically.</p>
-            <p className="text-slate-400">The initial product focuses on drug repurposing and evidence-backed research. TinyFish evidence retrieval is planned; this prototype uses demo records. ReThera Discover could later extend the platform into computational molecule generation and optimization. These capabilities do not establish safety or efficacy.</p>
+            <p className="text-slate-400">The initial product focuses on drug repurposing and evidence-backed research. New Investigation opens live TinyFish Search/Fetch or ClinicalTrials.gov registry retrieval, followed by researcher assessment, source review and an exportable evidence brief. Rankings and original graph relationships remain sample data. ReThera Discover could later extend the platform into computational molecule generation and optimization. These capabilities do not establish safety or efficacy.</p>
           </section>
           {/* Section 1: Core Product Mission */}
           <div>
@@ -51,7 +51,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               ReThera AI is an evidence-first biomedical intelligence platform designed to prioritize repurposing leads for computational biologists and translational pharmacology teams. The core workflow adheres to:
               <br />
               <span className="font-mono text-cyan-300">
-                Resolve Entity ➔ Retrieve Evidence ➔ Construct Graph ➔ Rank Hypotheses ➔ Retrieve New Sources (TinyFish, planned) ➔ Review Contradictions ➔ Export Dossier (planned).
+                Ask a question → Search TinyFish or ClinicalTrials.gov → Select a source → Fetch material → Researcher assessment and review → Export an evidence brief.
               </span>
             </p>
           </div>
