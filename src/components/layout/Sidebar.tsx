@@ -12,6 +12,7 @@ import {
   Atom,
   Sparkles,
   Server,
+  Database,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -36,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'compounds', label: 'Compounds', icon: <Boxes className="w-4 h-4" /> },
     { id: 'evidence-monitor', label: 'Evidence Monitor', icon: <Radio className="w-4 h-4" />, badge: 'Demo' },
     { id: 'reports', label: 'Reports', icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { id: 'dataset-lab', label: 'Dataset Lab', icon: <Database className="w-4 h-4" /> },
   ];
 
   return (

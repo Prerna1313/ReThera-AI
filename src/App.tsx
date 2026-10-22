@@ -25,6 +25,7 @@ import { ResearchDossierScreen } from './components/screens/ResearchDossierScree
 import { ReportsLibraryScreen } from './components/screens/ReportsLibraryScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
 import { DiscoverPreviewScreen } from './components/screens/DiscoverPreviewScreen';
+import { DatasetLabScreen } from './components/screens/DatasetLabScreen';
 
 import { NewInvestigationWizard } from './components/modals/NewInvestigationWizard';
 import { GlobalSearchModal } from './components/modals/GlobalSearchModal';
@@ -342,6 +343,8 @@ export const App: React.FC = () => {
                   onNavigate={handleNavigate}
                 />
               )}
+
+              {currentTab === 'dataset-lab' && <DatasetLabScreen />}
 
               {currentTab === 'discover-preview' && (
                 <DiscoverPreviewScreen onNavigate={handleNavigate} />

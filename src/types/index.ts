@@ -5,6 +5,7 @@ export type NavigationTab =
   | 'compounds'
   | 'evidence-monitor'
   | 'reports'
+  | 'dataset-lab'
   | 'candidate-details'
   | 'discover-preview'
   | 'settings';

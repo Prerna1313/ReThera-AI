@@ -4,9 +4,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { App } from '../src/App';
 import { EvidenceMonitorScreen } from '../src/components/screens/EvidenceMonitorScreen';
 import { KnowledgeGraphCanvas } from '../src/components/scientific/KnowledgeGraphCanvas';
+import { KnowledgeGraphScreen } from '../src/components/screens/KnowledgeGraphScreen';
 import { ReportsLibraryScreen } from '../src/components/screens/ReportsLibraryScreen';
 import { evidenceBrief } from '../src/data/evidence';
-import { mockCandidates, mockEvidenceRecords } from '../src/data/mockData';
+import { mockCandidates, mockEvidenceRecords, mockGraphEdges, mockGraphNodes } from '../src/data/mockData';
 import type { EvidenceRecord, ResearchScope } from '../src/types';
 
 const scope: ResearchScope = { id: 'investigation-a', question: 'What remains unknown about metformin in Alzheimer disease?', disease: 'Alzheimer disease', target: 'AMPK', compound: 'Metformin', query: 'metformin Alzheimer disease', createdAt: '2026-10-20T10:00:00Z' };
@@ -136,6 +137,25 @@ it('sample graph citations never become live researcher links', () => {
   expect(screen.getByText('Sample relationship')).toBeTruthy();
   expect(screen.queryByText('Live source annotation')).toBeNull();
   expect(screen.getByText(/Source URLs in fixtures do not validate/)).toBeTruthy();
+});
+
+it('knowledge graph traces researcher-linked live entities back to their source record', () => {
+  const openReview = vi.fn();
+  const live = {
+    ...mockEvidenceRecords[0],
+    provenance: 'live' as const,
+    linked_compounds: ['Metformin'],
+    linked_targets: ['AMPK'],
+    linked_diseases: ['Alzheimer disease'],
+  };
+  render(<KnowledgeGraphScreen nodes={mockGraphNodes} edges={mockGraphEdges} evidenceRecords={[live]} onNavigate={vi.fn()} onOpenEvidenceReview={openReview} />);
+
+  expect(screen.getByRole('heading', { name: 'Source-linked evidence paths' })).toBeTruthy();
+  expect(screen.getByText('Compound: Metformin')).toBeTruthy();
+  expect(screen.getByText('Target: AMPK')).toBeTruthy();
+  expect(screen.getByText('Disease / area: Alzheimer disease')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Inspect source and audit trail →' }));
+  expect(openReview).toHaveBeenCalledWith(live.id);
 });
 
 it('reports keep separate questions and live providers distinct from sample dossiers', () => {

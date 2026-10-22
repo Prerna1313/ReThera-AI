@@ -118,6 +118,14 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
       (edge.source === selectedNode.id || edge.target === selectedNode.id) && edge.evidence_ids.includes(record.id),
     ),
   );
+  const sourceLinkedPaths = evidenceRecords.filter(isLiveEvidence).map(record => ({
+    record,
+    entities: [
+      ...record.linked_compounds.map(label => ({ type: 'Compound', label })),
+      ...record.linked_targets.map(label => ({ type: 'Target', label })),
+      ...record.linked_diseases.map(label => ({ type: 'Disease / area', label })),
+    ].filter(entity => entity.label.trim()),
+  })).filter(path => path.entities.length > 0);
 
   return (
     <div className="space-y-6 pb-12">
@@ -189,6 +197,30 @@ export const KnowledgeGraphScreen: React.FC<KnowledgeGraphScreenProps> = ({
           ))}
         </div>
       </div>
+
+      <section className="rounded-2xl border border-cyan-500/25 bg-[#0A1B2B] p-4 space-y-3" aria-labelledby="source-paths-title">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 id="source-paths-title" className="text-sm font-bold text-slate-100">Source-linked evidence paths</h2>
+            <p className="mt-1 text-[11px] text-slate-400">Trace researcher-entered compound, target and disease links back to the source that was reviewed.</p>
+          </div>
+          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] text-cyan-200">{sourceLinkedPaths.length} live source{sourceLinkedPaths.length === 1 ? '' : 's'}</span>
+        </div>
+        {sourceLinkedPaths.length ? <div className="grid gap-2 md:grid-cols-2">
+          {sourceLinkedPaths.map(({ record, entities }) => <article key={record.id} className="rounded-xl border border-[#1C3648] bg-[#071321] p-3">
+            <div className="flex flex-wrap items-center gap-1.5" aria-label="Researcher-linked entities">
+              {entities.map((entity, index) => <React.Fragment key={`${entity.type}-${entity.label}-${index}`}>
+                {index > 0 && <span aria-hidden="true" className="text-slate-500">↔</span>}
+                <span className="rounded-md border border-cyan-500/25 bg-cyan-500/5 px-2 py-1 text-[10px] text-cyan-100">{entity.type}: {entity.label}</span>
+              </React.Fragment>)}
+            </div>
+            <p className="mt-2 line-clamp-2 text-xs font-semibold text-slate-200">{record.title}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[10px] text-slate-400"><span>{record.source_provider}</span><span>·</span><span>{record.review_status}</span><span>·</span><span>{record.direction}</span></div>
+            <button type="button" onClick={() => onOpenEvidenceReview(record.id)} className="mt-2 text-[10px] font-semibold text-teal-300 hover:text-white">Inspect source and audit trail →</button>
+          </article>)}
+        </div> : <p className="rounded-xl border border-dashed border-[#1C3648] p-4 text-xs text-slate-400">No live sources have been linked to research entities yet. Fetch a source in Evidence Monitor, add the annotations you can support, and save it to build a traceable source path.</p>}
+        <p className="text-[10px] text-amber-200">These are co-annotations attached to one source, not inferred or validated biological relationships. Sample graph paths remain separate below.</p>
+      </section>
 
       {/* Main Graph Grid (Central Canvas 8 cols / Right Contextual Panel 4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

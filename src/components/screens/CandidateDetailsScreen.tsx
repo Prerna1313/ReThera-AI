@@ -1,6 +1,8 @@
 import { isLiveEvidence } from '../../data/evidence';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Candidate, NavigationTab, EvidenceRecord } from '../../types';
+import { mockCandidates } from '../../data/mockData';
+import { findSimilarMolecules, type SimilarMolecule } from '../../data/molecularSimilarity';
 import { MoleculeViewer } from '../scientific/MoleculeViewer';
 import { StatusBadge } from '../scientific/StatusBadge';
 import {
@@ -37,10 +39,33 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'targets' | 'evidence' | 'trials' | 'properties' | 'related'>('overview');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
+  const [similarMolecules, setSimilarMolecules] = useState<SimilarMolecule[]>([]);
+  const [similarityStatus, setSimilarityStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [similarityError, setSimilarityError] = useState('');
   const linkedLiveEvidence = evidenceRecords.filter(record =>
     isLiveEvidence(record) &&
     record.linked_compounds.some(name => name.toLowerCase() === candidate.name.toLowerCase())
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    setSimilarityStatus('loading');
+    setSimilarityError('');
+    findSimilarMolecules(candidate.smiles, mockCandidates, candidate.id)
+      .then(results => {
+        if (!cancelled) {
+          setSimilarMolecules(results.slice(0, 5));
+          setSimilarityStatus('ready');
+        }
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setSimilarityError(error instanceof Error ? error.message : 'RDKit could not calculate molecular similarity.');
+          setSimilarityStatus('error');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [candidate.id, candidate.smiles]);
 
   return (
     <div className="space-y-6 pb-16">
@@ -278,24 +303,26 @@ export const CandidateDetailsScreen: React.FC<CandidateDetailsScreenProps> = ({
           {/* Chemical Similarity Search (Tanimoto Coefficients) */}
           <div className="p-5 rounded-2xl bg-[#0A1B2B] border border-[#1C3648] shadow-sm space-y-3">
             <span className="text-xs font-semibold text-[#9BB0BF] uppercase tracking-wider block">
-              Structural Analogues & Tanimoto Similarity
+              Calculated Structural Similarity
             </span>
 
-            <div className="space-y-2 text-xs font-mono">
-              {candidate.similar_compounds.map(sim => (
-                <div key={sim.name} className="flex items-center justify-between p-2 rounded-lg bg-[#071321] border border-[#1C3648]/50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-200 font-bold">{sim.name}</span>
-                    <span className="text-[10px] text-slate-400">({sim.status})</span>
+            {similarityStatus === 'loading' && <p role="status" className="text-xs text-slate-400">Loading RDKit and calculating fingerprints…</p>}
+            {similarityStatus === 'error' && <p role="alert" className="text-xs text-amber-200">{similarityError}</p>}
+            {similarityStatus === 'ready' && (similarMolecules.length ? <div className="space-y-2 text-xs font-mono">
+              {similarMolecules.map(sim => (
+                <div key={sim.id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-[#071321] border border-[#1C3648]/50">
+                  <div className="min-w-0">
+                    <span className="block truncate text-slate-200 font-bold">{sim.name}</span>
+                    <span className="block truncate text-[10px] text-slate-400">Known indication: {sim.knownIndication}</span>
                   </div>
-                  <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold text-[11px]">
-                    {sim.similarity.toFixed(2)}
+                  <span className="shrink-0 px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold text-[11px]">
+                    {sim.similarity.toFixed(3)}
                   </span>
                 </div>
               ))}
-            </div>
+            </div> : <p className="text-xs text-slate-400">No other valid structures are available in the current compound library.</p>)}
             <p className="text-[10px] text-slate-400/80 italic pt-1">
-              *Tanimoto similarity is a structural descriptor metric; it does not guarantee identical pharmacological action.
+              RDKit Morgan fingerprints (radius 2, 2,048 bits) with Tanimoto similarity. Compared with structures in the prototype library; this is a structural metric, not a model prediction or evidence of shared activity.
             </p>
           </div>
         </div>
